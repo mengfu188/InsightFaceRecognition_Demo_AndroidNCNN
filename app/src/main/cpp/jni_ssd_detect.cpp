@@ -3,7 +3,8 @@
 //
 
 
-
+#ifndef JNI_SSD_DETECT_CPP
+#define JNI_SSD_DETECT_CPP
 
 #include <stdio.h>
 #include <time.h>
@@ -146,3 +147,5 @@ JNIEXPORT void JNICALL
 Java_com_chenty_testncnn_FaceDetect_setThreshold(JNIEnv *env, jclass clazz, jfloat threshold) {
     ssd_detector.set_threshold(threshold);
 }
+
+#endif

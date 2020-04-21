@@ -12,6 +12,10 @@
 // CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 
+#ifndef JNI_CPP
+#define JNI_CPP
+
+
 #include <stdio.h>
 #include <time.h>
 #include <vector>
@@ -321,3 +325,4 @@ Java_com_chenty_testncnn_CameraNcnnFragment_intiArcface(JNIEnv *env, jobject thi
     init_arcface(net);
 }
 
+#endif

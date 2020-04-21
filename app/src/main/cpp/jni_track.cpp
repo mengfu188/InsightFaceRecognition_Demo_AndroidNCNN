@@ -2,6 +2,8 @@
 // Created by cmf on 20-4-21.
 //
 
+#ifndef JNI_TRACK
+#define JNI_TRACK
 
 #include <string>
 #include "opencv2/opencv.hpp"
@@ -33,3 +35,5 @@ Java_com_chenty_testncnn_Tracker_gray(JNIEnv *env, jclass clazz, jintArray buf, 
     env->ReleaseIntArrayElements(buf, cbuf, 0);
     return result;
 }
+
+#endif
