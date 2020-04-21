@@ -33,6 +33,8 @@ file(GLOB arcface_files "./arcface/*.cpp")
 set(NCNN_SRC_LISTS
         ${arcface_files}
         jni.cpp
+        detect/FaceDetector.cpp
+        detect/FaceDetector.h
         )
 
 add_library( # Sets the name of the library.
