@@ -120,9 +120,14 @@ public class CameraNcnnFragment extends Fragment
                     Log.d(TAG, "onViewAttachedToWindow: init mtcnn start");
                     initMtcnn(MainActivity.manager);
                     Log.d(TAG, "onViewAttachedToWindow: init mtcnn end");
+
                     Log.d(TAG, "onViewAttachedToWindow: init arcface start");
                     intiArcface(MainActivity.manager);
                     Log.d(TAG, "onViewAttachedToWindow: init arcface end");
+
+                    Log.d(TAG, "onViewAttachedToWindow: init ssd start");
+                    initSsd(MainActivity.manager);
+                    Log.d(TAG, "onViewAttachedToWindow: init ssd end");
 
 
                     Log.i(TAG, "onViewAttachedToWindow " + MAX_PREVIEW_WIDTH + "X" + MAX_PREVIEW_HEIGHT);
@@ -227,6 +232,7 @@ public class CameraNcnnFragment extends Fragment
     }
 
     // handler对象，用来接收消息
+    // 更新对比结果
     private Handler imgupdatehandle = new Handler() {
         @Override
         public void handleMessage(android.os.Message msg) {
@@ -1046,5 +1052,7 @@ public class CameraNcnnFragment extends Fragment
     public native float compareface(float[] face0, float[] face1);
     public native void initMtcnn(AssetManager assetManager);
     public native void intiArcface(AssetManager assetManager);
+    public native void initSsd(AssetManager assetManager);
+    public native float[] detectSsd(Bitmap data);
 
 }
