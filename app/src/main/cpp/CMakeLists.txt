@@ -34,9 +34,14 @@ set(NCNN_SRC_LISTS
         ${arcface_files}
         jni.cpp
         jni_ssd_detect.cpp
+        jni_track.cpp
         detect/FaceDetector.cpp
         detect/FaceDetector.h
         )
+
+include_directories(${OpenCV_DIR}/jni/include)
+add_library( lib_opencv SHARED IMPORTED )
+set_target_properties(lib_opencv PROPERTIES IMPORTED_LOCATION ${OpenCV_DIR}/libs/${ANDROID_ABI}/libopencv_java4.so)
 
 add_library( # Sets the name of the library.
         native-lib
@@ -73,6 +78,7 @@ target_link_libraries( # Specifies the target library.
         ${CMAKE_SOURCE_DIR}/ncnn-android-lib/${ANDROID_ABI}/libncnn.a
         android
         z
+        lib_opencv
         # Links the target library to the log library
         # included in the NDK.
         ${log-lib})

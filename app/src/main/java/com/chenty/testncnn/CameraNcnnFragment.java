@@ -410,8 +410,8 @@ public class CameraNcnnFragment extends Fragment
 
                                 canvas.drawPoint(firstface[j], firstface[j + 1], paint);
                             }
-
-                            capturefaceimg = Bitmap.createBitmap(bitmap, x, y, xe - x, ye - y);
+//                            bitmap = Tracker.gray(bitmap);
+                            capturefaceimg = Tracker.gray(Bitmap.createBitmap(bitmap, x, y, xe - x, ye - y));
 
                             notifyimgupdate();
                         }

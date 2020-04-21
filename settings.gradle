@@ -1,1 +1,3 @@
 include ':app'
+include ':opencv420'
+project(':opencv420').projectDir = new File(opencvsdk + '/sdk')
