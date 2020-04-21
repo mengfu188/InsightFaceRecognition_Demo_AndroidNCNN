@@ -145,8 +145,27 @@ public class AutoFitSurfaceView extends SurfaceView implements SurfaceHolder.Cal
             //
             DrawRect(new Rect(x,y,xe,ye),Color.RED, "face");
 
+            for(int j = 4; j <= 13; j+=2){
+                data[i*gap + j] = clamp(data[i*gap + j], 0, width);
+                data[i*gap + j + 1] = clamp(data[i*gap + j + 1], 0, height);
+
+                paint.setColor(Color.GREEN);
+                paint.setStyle(Paint.Style.STROKE);//不填充
+                paint.setStrokeWidth(5);  //线的宽度
+                mCanvas.drawPoint(data[i*gap + j], data[i*gap + j + 1], paint);
+            }
+
         }
     }
+
+    private static float clamp(float val, float min, float max) {
+        return Math.max(min, Math.min(max, val));
+    }
+    private static int clamp(int val, int min, int max) {
+        return Math.max(min, Math.min(max, val));
+    }
+
+//    public void drawLandmark()
 
     public void Draw(Bitmap mBitmap, float[] result, int rolatedeg) {
        {

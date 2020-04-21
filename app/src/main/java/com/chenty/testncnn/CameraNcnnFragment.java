@@ -34,8 +34,11 @@ import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
+import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
@@ -248,8 +251,40 @@ public class CameraNcnnFragment extends Fragment
 
             byte[] yuv = yuvbuffer.array();
 
+
             mBitmap = mSurfaceView.yuvToBitmap(yuv,width,height);
+            //mDetect_result
+            //0 = 0.3683735
+            //1 = 0.33241174
+            //2 = 0.64739114
+            //3 = 0.9157443
+            //4 = 140.13495
+            //5 = 91.13393
+            //6 = 195.13495
+            //7 = 99.13393
+            //8 = 159.13495
+            //9 = 115.13393
+            //10 = 133.13495
+            //11 = 152.13495
+            //12 = 180.13495
+            //13 = 164.13495
+            //14 = 1.0437933
+            //15 = 18375.262
+            //16 = 0.17027265
+            //17 = 0.045270104
+            //18 = 0.14723615
+            //19 = 0.1926438
             mSurfaceView.Draw(mBitmap, mDetect_result, 90);
+            if (mDetect_result != null){
+
+                for(int i = 0; i < mDetect_result.length; i++){
+                    mDetect_result[i] += 0.001;
+                }
+
+            }
+
+
+
 
             //split process function to prevent img reflash stop
             if(!mDetect_isbusy)
@@ -257,10 +292,14 @@ public class CameraNcnnFragment extends Fragment
                 mDetect_isbusy = true;
                 new Thread(() -> {
                     float[] result = ncnnprocess_imgyuv(yuv, width, height);
+
                     if(result != null) {
+
                         mDetect_result = Arrays.copyOfRange(result, 128, result.length);
                         Log.d(TAG, "detect result " + mDetect_result.length + " "
-                                + mDetect_result[0] + " " + mDetect_result[1] + " " + mDetect_result[2] + " " + mDetect_result[3] + " ");
+                                + mDetect_result[0] + " " + mDetect_result[1] + " " + mDetect_result[2] + " " + mDetect_result[3] + " "
+                                +  mDetect_result[4] + " "
+                        );
 
                         int x,y,xe,ye;
                         double expand = 0.05f;
@@ -284,7 +323,27 @@ public class CameraNcnnFragment extends Fragment
                         xe = (int)(firstface[2] * mBitmap.getWidth());
                         ye = (int)(firstface[3] * mBitmap.getHeight());
 
+
+//                        Canvas canvas = new Canvas(mBitmap);
+//                        Paint paint = new Paint();
+//                        paint.setColor(Color.RED);
+//                        paint.setStyle(Paint.Style.STROKE);//不填充
+//                        paint.setStrokeWidth(5);  //线的宽度
+//                        canvas.drawRect(x, y, x+50, y+50, paint);
+//
+//                        canvas.drawPoints(new float[]{
+//                                firstface[5] , firstface[6] ,
+//                                firstface[7], firstface[8] ,
+//                                firstface[9], firstface[10] ,
+//                                firstface[11], firstface[12] ,
+//                                firstface[13], firstface[14]
+//                        }, paint);//画多个点
+                        Log.d(TAG, "onImageAvailable: " + firstface[5] + " " + firstface[5] * mBitmap.getWidth());
+
                         capturefaceimg = Bitmap.createBitmap(mBitmap, x, y, xe-x, ye-y);
+//                        capturefaceimg =
+
+
                         capturefaceimg_feature =  Arrays.copyOfRange(result, 0, 128);;
 
                         if(targetfaceimg_feature != null)

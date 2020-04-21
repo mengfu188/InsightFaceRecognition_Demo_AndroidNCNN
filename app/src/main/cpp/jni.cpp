@@ -33,6 +33,7 @@ extern "C" {
 
 #define FACE_DETECT_SIZEH   448
 int sizeh, sizev;
+int global_src_width, global_src_htight;
 
 
 int faceinfo2float(float *out, FaceInfo *in)
@@ -102,6 +103,8 @@ Java_com_chenty_testncnn_CameraNcnnFragment_detectface(JNIEnv *env, jobject thiz
     sizeh = FACE_DETECT_SIZEH;
     sizev = FACE_DETECT_SIZEH*src_height/src_width;
 
+    LOGD("sizeh is %d sizev is %d", sizeh, sizev);
+
     //shift argb to rgba
     char *yuv = (char *)malloc(size);
     memcpy(yuv, yuv_frame, size);
@@ -128,6 +131,7 @@ Java_com_chenty_testncnn_CameraNcnnFragment_detectface(JNIEnv *env, jobject thiz
             FaceInfo face = faceinfo[i];
             LOGD("get face %d %d %d %d", face.x[0], face.y[0], face.x[1], face.y[1]);
             int res = faceinfo2float(out, &face);
+            LOGD("faceinfo2float get face %f %f %f %f", out[0],out[1],out[2],out[3]);
             out=out+res;
         }
 
