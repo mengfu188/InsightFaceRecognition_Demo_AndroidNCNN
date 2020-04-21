@@ -7,6 +7,7 @@
 #include <vector>
 
 void initMtcnn(ncnn::Net &pnet, ncnn::Net &rnet, ncnn::Net &onet, ncnn::Net &lnet);
+void init_arcface(ncnn::Net &net);
 
 vector<FaceInfo> face_detect(ncnn::Mat ncnn_img);
 vector<float> face_exactfeature(ncnn::Mat img, FaceInfo info);

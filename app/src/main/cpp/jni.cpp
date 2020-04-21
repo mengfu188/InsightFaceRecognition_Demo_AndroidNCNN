@@ -277,3 +277,34 @@ Java_com_chenty_testncnn_CameraNcnnFragment_initMtcnn(JNIEnv *env, jobject thiz,
 #ifdef __cplusplus  
 }  
 #endif
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_chenty_testncnn_CameraNcnnFragment_intiArcface(JNIEnv *env, jobject thiz,
+                                                        jobject asset_manager) {
+    AAssetManager *mgr = AAssetManager_fromJava(env, asset_manager);
+    static ncnn::Net net;
+
+    if (mgr == NULL) {
+        LOGD(" %s", "AAssetManager==NULL");
+    }else{
+        LOGD("AAssetManager is not NULL");
+    }
+
+    {
+        const char *mfile = "faceRecognize.param";
+        AAsset *param_asset = AAssetManager_open(mgr, mfile, AASSET_MODE_UNKNOWN);
+        if (param_asset == NULL) {
+            LOGD(" %s", "param_asset==NULL");
+        }
+        net.load_param(param_asset);
+    }
+    {
+        const char *mfile = "faceRecognize.bin";
+        AAsset *model_asset = AAssetManager_open(mgr, mfile, AASSET_MODE_UNKNOWN);
+        if (model_asset == NULL) {
+            LOGD(" %s", "model_asset==NULL");
+        }
+        net.load_model(model_asset);
+    }
+    init_arcface(net);
+}

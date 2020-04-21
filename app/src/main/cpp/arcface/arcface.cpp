@@ -1,11 +1,11 @@
 #include "arcface.h"
-#include "mobilefacenet.id.h"
-#include "mobilefacenet.h"
+//#include "mobilefacenet.id.h"
+//#include "mobilefacenet.h"
 
 Arcface::Arcface()
 {
-    this->net.load_param(mobilefacenet_param_bin);
-    this->net.load_model(mobilefacenet_bin);
+//    this->net.load_param(mobilefacenet_param_bin);
+//    this->net.load_model(mobilefacenet_bin);
 }
 
 Arcface::~Arcface()
@@ -21,9 +21,9 @@ vector<float> Arcface::getFeature(ncnn::Mat img)
     ncnn::Extractor ex = net.create_extractor();
     ex.set_light_mode(true);
     ex.set_num_threads(2);
-    ex.input(mobilefacenet_param_id::BLOB_data, in);
+    ex.input("data", in);
     ncnn::Mat out;
-    ex.extract(mobilefacenet_param_id::BLOB_fc1, out);
+    ex.extract("fc1", out);
     feature.resize(this->feature_dim);
     for (int i = 0; i < this->feature_dim; i++)
         feature[i] = out[i];

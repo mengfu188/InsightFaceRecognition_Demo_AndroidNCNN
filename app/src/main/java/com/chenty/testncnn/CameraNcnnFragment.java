@@ -120,6 +120,9 @@ public class CameraNcnnFragment extends Fragment
                     Log.d(TAG, "onViewAttachedToWindow: init mtcnn start");
                     initMtcnn(MainActivity.manager);
                     Log.d(TAG, "onViewAttachedToWindow: init mtcnn end");
+                    Log.d(TAG, "onViewAttachedToWindow: init arcface start");
+                    intiArcface(MainActivity.manager);
+                    Log.d(TAG, "onViewAttachedToWindow: init arcface end");
 
 
                     Log.i(TAG, "onViewAttachedToWindow " + MAX_PREVIEW_WIDTH + "X" + MAX_PREVIEW_HEIGHT);
@@ -1042,5 +1045,6 @@ public class CameraNcnnFragment extends Fragment
     public native float[] detectface(byte[] data, int width, int height);
     public native float compareface(float[] face0, float[] face1);
     public native void initMtcnn(AssetManager assetManager);
+    public native void intiArcface(AssetManager assetManager);
 
 }

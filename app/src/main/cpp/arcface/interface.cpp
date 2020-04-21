@@ -21,6 +21,10 @@ void initMtcnn(ncnn::Net &pnet, ncnn::Net &rnet, ncnn::Net &onet, ncnn::Net &lne
     g_mtcnnDetector.Lnet = lnet;
 }
 
+void init_arcface(ncnn::Net &net){
+    g_arcFace.net = net;
+}
+
 //outputdat is x y x y
 vector<FaceInfo> face_detect(ncnn::Mat ncnn_img)
 {

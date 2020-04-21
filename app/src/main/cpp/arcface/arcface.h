@@ -20,9 +20,8 @@ public:
     Arcface();
     ~Arcface();
     vector<float> getFeature(ncnn::Mat img);
-
-private:
     ncnn::Net net;
+private:
 
     const int feature_dim = 128;
 
