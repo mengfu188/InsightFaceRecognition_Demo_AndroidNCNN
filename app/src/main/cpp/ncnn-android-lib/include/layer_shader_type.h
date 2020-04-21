@@ -1,6 +1,6 @@
 // Tencent is pleased to support the open source community by making ncnn available.
 //
-// Copyright (C) 2017 THL A29 Limited, a Tencent company. All rights reserved.
+// Copyright (C) 2020 THL A29 Limited, a Tencent company. All rights reserved.
 //
 // Licensed under the BSD 3-Clause License (the "License"); you may not use this file except
 // in compliance with the License. You may obtain a copy of the License at
@@ -12,35 +12,18 @@
 // CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 
-#ifndef NCNN_BLOB_H
-#define NCNN_BLOB_H
-
-#include <string>
-#include <vector>
-#include "platform.h"
-#include "mat.h"
+#ifndef NCNN_LAYER_SHADER_TYPE_H
+#define NCNN_LAYER_SHADER_TYPE_H
 
 namespace ncnn {
 
-class Blob
+namespace LayerShaderType {
+enum LayerShaderType
 {
-public:
-    // empty
-    Blob();
-
-public:
-#if NCNN_STRING
-    // blob name
-    std::string name;
-#endif // NCNN_STRING
-    // layer index which produce this blob as output
-    int producer;
-    // layer index which need this blob as input
-    std::vector<int> consumers;
-    // shape hint
-    Mat shape;
+#include "layer_shader_type_enum.h"
 };
+} // namespace LayerType
 
 } // namespace ncnn
 
-#endif // NCNN_BLOB_H
+#endif // NCNN_LAYER_SHADER_TYPE_H

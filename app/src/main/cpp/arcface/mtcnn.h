@@ -13,19 +13,21 @@ using namespace std;
 
 class MtcnnDetector {
 public:
+    MtcnnDetector(ncnn::Net &pnet, ncnn::Net &rnet, ncnn::Net &onet, ncnn::Net &lnet);
     MtcnnDetector();
     ~MtcnnDetector();
     vector<FaceInfo> Detect(ncnn::Mat img);
+    ncnn::Net Pnet;
+    ncnn::Net Rnet;
+    ncnn::Net Onet;
+    ncnn::Net Lnet;
 private:
     float minsize = 80;
     float threshold[3] = {0.6f, 0.7f, 0.8f};
     float factor = 0.709f;
     const float mean_vals[3] = {127.5f, 127.5f, 127.5f};
     const float norm_vals[3] = {0.0078125f, 0.0078125f, 0.0078125f};
-    ncnn::Net Pnet;
-    ncnn::Net Rnet;
-    ncnn::Net Onet;
-    ncnn::Net Lnet;
+
     vector<FaceInfo> Pnet_Detect(ncnn::Mat img);
     vector<FaceInfo> Rnet_Detect(ncnn::Mat img, vector<FaceInfo> bboxs);
     vector<FaceInfo> Onet_Detect(ncnn::Mat img, vector<FaceInfo> bboxs);

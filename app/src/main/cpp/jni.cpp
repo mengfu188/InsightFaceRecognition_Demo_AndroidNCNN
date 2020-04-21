@@ -25,6 +25,8 @@
 #define LOGE(...) ((void)__android_log_print(ANDROID_LOG_ERROR, "libssd", __VA_ARGS__))
 
 #include "arcface/interface.h"
+#include <android/asset_manager_jni.h>
+#include <android/asset_manager.h>
 
 
 #ifdef __cplusplus
@@ -183,6 +185,94 @@ Java_com_chenty_testncnn_CameraNcnnFragment_compareface(JNIEnv *env, jobject thi
 
 }
 
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_chenty_testncnn_CameraNcnnFragment_initMtcnn(JNIEnv *env, jobject thiz,
+                                                      jobject asset_manager) {
+    // TODO: implement initMtcnn()
+    AAssetManager *mgr = AAssetManager_fromJava(env, asset_manager);
+    static ncnn::Net pnet, rnet, onet, lnet;
+
+
+
+    if (mgr == NULL) {
+        LOGD(" %s", "AAssetManager==NULL");
+    }else{
+        LOGD("AAssetManager is not NULL");
+    }
+
+    {
+        const char *mfile = "det1.param";
+        AAsset *param_asset = AAssetManager_open(mgr, mfile, AASSET_MODE_UNKNOWN);
+        if (param_asset == NULL) {
+            LOGD(" %s", "param_asset==NULL");
+        }
+        pnet.load_param(param_asset);
+    }
+    {
+        const char *mfile = "det1.bin";
+        AAsset *model_asset = AAssetManager_open(mgr, mfile, AASSET_MODE_UNKNOWN);
+        if (model_asset == NULL) {
+            LOGD(" %s", "model_asset==NULL");
+        }
+        pnet.load_model(model_asset);
+    }
+
+    {
+        const char *mfile = "det2.param";
+        AAsset *param_asset = AAssetManager_open(mgr, mfile, AASSET_MODE_UNKNOWN);
+        if (param_asset == NULL) {
+            LOGD(" %s", "param_asset==NULL");
+        }
+        rnet.load_param(param_asset);
+    }
+    {
+        const char *mfile = "det2.bin";
+        AAsset *model_asset = AAssetManager_open(mgr, mfile, AASSET_MODE_UNKNOWN);
+        if (model_asset == NULL) {
+            LOGD(" %s", "model_asset==NULL");
+        }
+        rnet.load_model(model_asset);
+    }
+
+    {
+        const char *mfile = "det3.param";
+        AAsset *param_asset = AAssetManager_open(mgr, mfile, AASSET_MODE_UNKNOWN);
+        if (param_asset == NULL) {
+            LOGD(" %s", "param_asset==NULL");
+        }
+        onet.load_param(param_asset);
+    }
+    {
+        const char *mfile = "det3.bin";
+        AAsset *model_asset = AAssetManager_open(mgr, mfile, AASSET_MODE_UNKNOWN);
+        if (model_asset == NULL) {
+            LOGD(" %s", "model_asset==NULL");
+        }
+        onet.load_model(model_asset);
+    }
+
+    {
+        const char *mfile = "det4.param";
+        AAsset *param_asset = AAssetManager_open(mgr, mfile, AASSET_MODE_UNKNOWN);
+        if (param_asset == NULL) {
+            LOGD(" %s", "param_asset==NULL");
+        }
+        lnet.load_param(param_asset);
+    }
+    {
+        const char *mfile = "det4.bin";
+        AAsset *model_asset = AAssetManager_open(mgr, mfile, AASSET_MODE_UNKNOWN);
+        if (model_asset == NULL) {
+            LOGD(" %s", "model_asset==NULL");
+        }
+        lnet.load_model(model_asset);
+    }
+
+//    g_mtcnnDetector = MtcnnDetector(pnet, rnet, onet, lnet);
+    initMtcnn(pnet, rnet, onet, lnet);
+
+}
 
 #ifdef __cplusplus  
 }  

@@ -14,6 +14,13 @@ MtcnnDetector g_mtcnnDetector;
 Arcface g_arcFace;
 
 
+void initMtcnn(ncnn::Net &pnet, ncnn::Net &rnet, ncnn::Net &onet, ncnn::Net &lnet){
+    g_mtcnnDetector.Pnet = pnet;
+    g_mtcnnDetector.Rnet = rnet;
+    g_mtcnnDetector.Onet = onet;
+    g_mtcnnDetector.Lnet = lnet;
+}
+
 //outputdat is x y x y
 vector<FaceInfo> face_detect(ncnn::Mat ncnn_img)
 {

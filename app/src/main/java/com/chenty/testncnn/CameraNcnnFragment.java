@@ -32,6 +32,7 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
+import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -115,6 +116,12 @@ public class CameraNcnnFragment extends Fragment
             new SurfaceView.OnAttachStateChangeListener() {
                 public void onViewAttachedToWindow(View v)
                 {
+
+                    Log.d(TAG, "onViewAttachedToWindow: init mtcnn start");
+                    initMtcnn(MainActivity.manager);
+                    Log.d(TAG, "onViewAttachedToWindow: init mtcnn end");
+
+
                     Log.i(TAG, "onViewAttachedToWindow " + MAX_PREVIEW_WIDTH + "X" + MAX_PREVIEW_HEIGHT);
                     getActivity().getWindowManager().getDefaultDisplay().getSize(displaySize);
                     openCamera(displaySize.x, displaySize.y);
@@ -131,6 +138,7 @@ public class CameraNcnnFragment extends Fragment
 
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture texture, int width, int height) {
+
             openCamera(width, height);
         }
 
@@ -1033,5 +1041,6 @@ public class CameraNcnnFragment extends Fragment
 
     public native float[] detectface(byte[] data, int width, int height);
     public native float compareface(float[] face0, float[] face1);
+    public native void initMtcnn(AssetManager assetManager);
 
 }

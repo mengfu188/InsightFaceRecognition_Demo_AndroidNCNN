@@ -1,24 +1,31 @@
 #include "mtcnn.h"
-#include "det1.h"
-#include "det1.id.h"
-#include "det2.h"
-#include "det2.id.h"
-#include "det3.h"
-#include "det3.id.h"
-#include "det4.h"
-#include "det4.id.h"
+//#include "det1.h"
+//#include "det1.id.h"
+//#include "det2.h"
+//#include "det2.id.h"
+//#include "det3.h"
+//#include "det3.id.h"
+//#include "det4.h"
+//#include "det4.id.h"
+
+MtcnnDetector::MtcnnDetector(ncnn::Net &pnet, ncnn::Net &rnet, ncnn::Net &onet, ncnn::Net &lnet){
+    this->Pnet = pnet;
+    this->Rnet = rnet;
+    this->Onet = onet;
+    this->Lnet = lnet;
+}
 
 
 MtcnnDetector::MtcnnDetector()
 {
-    this->Pnet.load_param(det1_param_bin);
-    this->Pnet.load_model(det1_bin);
-    this->Rnet.load_param(det2_param_bin);
-    this->Rnet.load_model(det2_bin);
-    this->Onet.load_param(det3_param_bin);
-    this->Onet.load_model(det3_bin);
-    this->Lnet.load_param(det4_param_bin);
-    this->Lnet.load_model(det4_bin);
+//    this->Pnet.load_param(det1_param_bin);
+//    this->Pnet.load_model(det1_bin);
+//    this->Rnet.load_param(det2_param_bin);
+//    this->Rnet.load_model(det2_bin);
+//    this->Onet.load_param(det3_param_bin);
+//    this->Onet.load_model(det3_bin);
+//    this->Lnet.load_param(det4_param_bin);
+//    this->Lnet.load_model(det4_bin);
 }
 
 MtcnnDetector::~MtcnnDetector()
@@ -76,11 +83,11 @@ vector<FaceInfo> MtcnnDetector::Pnet_Detect(ncnn::Mat img)
         ncnn::Extractor ex = Pnet.create_extractor();
         ex.set_light_mode(true);
         ex.set_num_threads(2);
-        ex.input(det1_param_id::BLOB_data, in);
+        ex.input("data", in);
         ncnn::Mat score;
         ncnn::Mat location;
-        ex.extract(det1_param_id::BLOB_prob1, score);
-        ex.extract(det1_param_id::BLOB_conv4_2, location);
+        ex.extract("prob1", score);
+        ex.extract("conv4_2", location);
         vector<FaceInfo> bboxs = generateBbox(score, location, *it, this->threshold[0]);
         doNms(bboxs, 0.5, "union");
         results.insert(results.end(), bboxs.begin(), bboxs.end());
@@ -104,10 +111,10 @@ vector<FaceInfo> MtcnnDetector::Rnet_Detect(ncnn::Mat img, vector<FaceInfo> bbox
         ncnn::Extractor ex = Rnet.create_extractor();
         ex.set_light_mode(true);
         ex.set_num_threads(2);
-        ex.input(det2_param_id::BLOB_data, in);
+        ex.input("data", in);
         ncnn::Mat score, bbox;
-        ex.extract(det2_param_id::BLOB_prob1, score);
-        ex.extract(det2_param_id::BLOB_conv5_2, bbox);
+        ex.extract("prob1", score);
+        ex.extract("conv5_2", bbox);
         if ((float)score[1] > threshold[1])
         {
             for (int c = 0; c < 4; c++)
@@ -137,11 +144,11 @@ vector<FaceInfo> MtcnnDetector::Onet_Detect(ncnn::Mat img, vector<FaceInfo> bbox
         ncnn::Extractor ex = Onet.create_extractor();
         ex.set_light_mode(true);
         ex.set_num_threads(2);
-        ex.input(det3_param_id::BLOB_data, in);
+        ex.input("data", in);
         ncnn::Mat score, bbox, point;
-        ex.extract(det3_param_id::BLOB_prob1, score);
-        ex.extract(det3_param_id::BLOB_conv6_2, bbox);
-        ex.extract(det3_param_id::BLOB_conv6_3, point);
+        ex.extract("prob1", score);
+        ex.extract("conv6_2", bbox);
+        ex.extract("conv6_3", point);
         if ((float)score[1] > threshold[2])
         {
             for (int c = 0; c < 4; c++)
@@ -191,14 +198,14 @@ void MtcnnDetector::Lnet_Detect(ncnn::Mat img, vector<FaceInfo> &bboxes)
         ncnn::Extractor ex = Lnet.create_extractor();
         ex.set_light_mode(true);
         ex.set_num_threads(2);
-        ex.input(det4_param_id::BLOB_data, in);
+        ex.input("data", in);
         ncnn::Mat out1, out2, out3, out4, out5;
 
-        ex.extract(det4_param_id::BLOB_fc5_1, out1);
-        ex.extract(det4_param_id::BLOB_fc5_2, out2);
-        ex.extract(det4_param_id::BLOB_fc5_3, out3);
-        ex.extract(det4_param_id::BLOB_fc5_4, out4);
-        ex.extract(det4_param_id::BLOB_fc5_5, out5);
+        ex.extract("fc5_1", out1);
+        ex.extract("fc5_2", out2);
+        ex.extract("fc5_3", out3);
+        ex.extract("fc5_4", out4);
+        ex.extract("fc5_5", out5);
 
         if (abs(out1[0] - 0.5) > 0.35) out1[0] = 0.5f;
         if (abs(out1[1] - 0.5) > 0.35) out1[1] = 0.5f;
@@ -337,3 +344,4 @@ void MtcnnDetector::refine(vector<FaceInfo> &bboxs, int height, int width, bool 
         it->area = (it->x[1] - it->x[0]) * (it->y[1] - it->y[0]);
     }
 }
+

@@ -32,6 +32,10 @@
 #include "gpu.h"
 #endif // NCNN_VULKAN
 
+#if __ANDROID_API__ >= 26
+#include <android/hardware_buffer.h>
+#endif // __ANDROID_API__ >= 26
+
 namespace ncnn {
 
 // the alignment of all the allocated buffers
@@ -122,7 +126,7 @@ static inline int NCNN_XADD(int* addr, int delta) { int tmp = *addr; *addr += de
 class Allocator
 {
 public:
-    virtual ~Allocator() = 0;
+    virtual ~Allocator();
     virtual void* fastMalloc(size_t size) = 0;
     virtual void fastFree(void* ptr) = 0;
 };
@@ -188,12 +192,8 @@ public:
     void* mapped_ptr;
 
     // buffer state, modified by command functions internally
-    // 0=null
-    // 1=created
-    // 2=transfer
-    // 3=compute
-    // 4=readonly
-    mutable int state;
+    mutable VkAccessFlags access_flags;
+    mutable VkPipelineStageFlags stage_flags;
 
     // initialize and modified by mat
     int refcount;
@@ -207,27 +207,28 @@ public:
     virtual void clear() {}
     virtual VkBufferMemory* fastMalloc(size_t size) = 0;
     virtual void fastFree(VkBufferMemory* ptr) = 0;
+    virtual int flush(VkBufferMemory* ptr);
+    virtual int invalidate(VkBufferMemory* ptr);
 
 public:
     const VulkanDevice* vkdev;
+    uint32_t memory_type_index;
     bool mappable;
+    bool coherent;
 
 protected:
     VkBuffer create_buffer(size_t size, VkBufferUsageFlags usage);
-    VkDeviceMemory allocate_memory(size_t size, uint32_t memory_type_index);
-    VkDeviceMemory allocate_dedicated_memory(size_t size, uint32_t memory_type_index, VkBuffer buffer);
+    VkDeviceMemory allocate_memory(size_t size);
+    VkDeviceMemory allocate_dedicated_memory(size_t size, VkBuffer buffer);
 };
 
-class VkUnlockedBlobBufferAllocator : public VkAllocator
+class VkBlobBufferAllocator : public VkAllocator
 {
 public:
-    VkUnlockedBlobBufferAllocator(const VulkanDevice* vkdev);
-    virtual ~VkUnlockedBlobBufferAllocator();
+    VkBlobBufferAllocator(const VulkanDevice* vkdev);
+    virtual ~VkBlobBufferAllocator();
 
 public:
-    // buffer block size, default=16M
-    void set_block_size(size_t size);
-
     // release all budgets immediately
     virtual void clear();
 
@@ -241,21 +242,6 @@ private:
     std::vector<VkBufferMemory*> buffer_blocks;
 };
 
-class VkBlobBufferAllocator : public VkUnlockedBlobBufferAllocator
-{
-public:
-    VkBlobBufferAllocator(const VulkanDevice* vkdev);
-    virtual ~VkBlobBufferAllocator();
-
-public:
-    virtual void clear();
-    virtual VkBufferMemory* fastMalloc(size_t size);
-    virtual void fastFree(VkBufferMemory* ptr);
-
-private:
-    Mutex budgets_lock;
-};
-
 class VkWeightBufferAllocator : public VkAllocator
 {
 public:
@@ -263,9 +249,6 @@ public:
     virtual ~VkWeightBufferAllocator();
 
 public:
-    // buffer block size, default=8M
-    void set_block_size(size_t block_size);
-
     // release all blocks immediately
     virtual void clear();
 
@@ -281,11 +264,11 @@ private:
     std::vector<VkBufferMemory*> dedicated_buffer_blocks;
 };
 
-class VkUnlockedStagingBufferAllocator : public VkAllocator
+class VkStagingBufferAllocator : public VkAllocator
 {
 public:
-    VkUnlockedStagingBufferAllocator(const VulkanDevice* vkdev);
-    virtual ~VkUnlockedStagingBufferAllocator();
+    VkStagingBufferAllocator(const VulkanDevice* vkdev);
+    virtual ~VkStagingBufferAllocator();
 
 public:
     // ratio range 0 ~ 1
@@ -299,24 +282,8 @@ public:
     virtual void fastFree(VkBufferMemory* ptr);
 
 private:
-    uint32_t memory_type_index;
     unsigned int size_compare_ratio;// 0~256
     std::list<VkBufferMemory*> budgets;
-};
-
-class VkStagingBufferAllocator : public VkUnlockedStagingBufferAllocator
-{
-public:
-    VkStagingBufferAllocator(const VulkanDevice* vkdev);
-    virtual ~VkStagingBufferAllocator();
-
-public:
-    virtual void clear();
-    virtual VkBufferMemory* fastMalloc(size_t size);
-    virtual void fastFree(VkBufferMemory* ptr);
-
-private:
-    Mutex budgets_lock;
 };
 
 class VkWeightStagingBufferAllocator : public VkAllocator
@@ -330,8 +297,81 @@ public:
     virtual void fastFree(VkBufferMemory* ptr);
 
 private:
-    uint32_t memory_type_index;
 };
+
+class VkImageMemory
+{
+public:
+    VkImage image;
+    VkImageView imageview;
+
+    VkDeviceMemory memory;
+
+    // image state, modified by command functions internally
+    mutable VkAccessFlags access_flags;
+    mutable VkPipelineStageFlags stage_flags;
+
+    // initialize and modified by mat
+    int refcount;
+};
+
+class VkImageAllocator : public VkAllocator
+{
+public:
+    VkImageAllocator(const VulkanDevice* _vkdev);
+    virtual ~VkImageAllocator() { clear(); }
+    virtual void clear() {}
+    virtual VkImageMemory* fastMalloc(int width, int height, VkFormat format) = 0;
+    virtual void fastFree(VkImageMemory* ptr) = 0;
+
+protected:
+    virtual VkBufferMemory* fastMalloc(size_t /*size*/) { return 0; }
+    virtual void fastFree(VkBufferMemory* /*ptr*/) {}
+
+protected:
+    VkImage create_image(int width, int height, VkFormat format, VkImageUsageFlags usage);
+    VkImageView create_imageview(VkImage image, VkFormat format);
+    VkDeviceMemory allocate_dedicated_memory(size_t size, VkImage image);
+};
+
+class VkSimpleImageAllocator : public VkImageAllocator
+{
+public:
+    VkSimpleImageAllocator(const VulkanDevice* vkdev);
+    virtual ~VkSimpleImageAllocator();
+
+public:
+    virtual VkImageMemory* fastMalloc(int width, int height, VkFormat format);
+    virtual void fastFree(VkImageMemory* ptr);
+};
+
+#if __ANDROID_API__ >= 26
+class ImportAndroidHardwareBufferPipeline;
+class VkAndroidHardwareBufferImageAllocator : public VkImageAllocator
+{
+public:
+    VkAndroidHardwareBufferImageAllocator(const VulkanDevice* _vkdev, AHardwareBuffer* _hb);
+    virtual ~VkAndroidHardwareBufferImageAllocator();
+
+public:
+    virtual VkImageMemory* fastMalloc(int width, int height, VkFormat format);
+    virtual void fastFree(VkImageMemory* ptr);
+
+public:
+    int init();
+
+    int width() const;
+    int height() const;
+    uint64_t external_format() const;
+
+public:
+    AHardwareBuffer* hb;
+    AHardwareBuffer_Desc bufferDesc;
+    VkAndroidHardwareBufferFormatPropertiesANDROID bufferFormatProperties;
+    VkAndroidHardwareBufferPropertiesANDROID bufferProperties;
+    VkSamplerYcbcrConversionKHR samplerYcbcrConversion;
+};
+#endif // __ANDROID_API__ >= 26
 
 #endif // NCNN_VULKAN
 
