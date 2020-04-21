@@ -128,7 +128,7 @@ public class AutoFitSurfaceView extends SurfaceView implements SurfaceHolder.Cal
             y = (int) (data[i*gap + 1] * (height));
             xe = (int) (data[i*gap + 2] * (width));
             ye = (int) (data[i*gap + 3] * (height));
-            Log.d(TAG, "obj" + x + " " + y + " " + xe + " " + ye);
+            Log.d(TAG, "obj " + x + " " + y + " " + xe + " " + ye);
 
             if(x < 0) {
                 x = 0;
@@ -146,8 +146,8 @@ public class AutoFitSurfaceView extends SurfaceView implements SurfaceHolder.Cal
             DrawRect(new Rect(x,y,xe,ye),Color.RED, "face");
 
             for(int j = 4; j <= 13; j+=2){
-                data[i*gap + j] = clamp(data[i*gap + j], 0, width);
-                data[i*gap + j + 1] = clamp(data[i*gap + j + 1], 0, height);
+                data[i*gap + j] = clamp(data[i*gap + j] * width, 0, width);
+                data[i*gap + j + 1] = clamp(data[i*gap + j + 1] * height, 0, height);
 
                 paint.setColor(Color.GREEN);
                 paint.setStyle(Paint.Style.STROKE);//不填充

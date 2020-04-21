@@ -96,7 +96,7 @@ extern "C" JNIEXPORT jfloatArray JNICALL
 Java_com_chenty_testncnn_CameraNcnnFragment_detectface(JNIEnv *env, jobject thiz, jbyteArray frame, jint src_width,
                                                         jint src_height) {
     char *yuv_frame = (char*)env->GetPrimitiveArrayCritical(frame, NULL);
-
+    LOGD("MTCNN detectface src_width %d, src_height %d", src_width, src_height);
     int size = env->GetArrayLength(frame);
     int objectcnt = 0;
     int i;
@@ -105,7 +105,7 @@ Java_com_chenty_testncnn_CameraNcnnFragment_detectface(JNIEnv *env, jobject thiz
     sizeh = FACE_DETECT_SIZEH;
     sizev = FACE_DETECT_SIZEH*src_height/src_width;
 
-    LOGD("sizeh is %d sizev is %d", sizeh, sizev);
+    LOGD("MTCNN detectface scale_width is %d, scale_height is %d", sizeh, sizev);
 
     //shift argb to rgba
     char *yuv = (char *)malloc(size);
@@ -114,7 +114,7 @@ Java_com_chenty_testncnn_CameraNcnnFragment_detectface(JNIEnv *env, jobject thiz
     env->ReleasePrimitiveArrayCritical(frame, yuv_frame, JNI_ABORT);
 
     ncnn::Mat in = ncnn::Mat::from_pixels_resize((const unsigned char *)yuv, ncnn::Mat::PIXEL_GRAY2BGR, src_width, src_height, sizeh, sizev);
-    LOGD("detect face  in %dX%d", src_width, src_height);
+//    LOGD("detect face  in %dX%d", src_width, src_height);
     vector<FaceInfo> faceinfo = face_detect(in);
 
     free(yuv);
@@ -131,19 +131,30 @@ Java_com_chenty_testncnn_CameraNcnnFragment_detectface(JNIEnv *env, jobject thiz
         for (int i = 0 ; i < cnt ; i ++)
         {
             FaceInfo face = faceinfo[i];
-            LOGD("get face %d %d %d %d", face.x[0], face.y[0], face.x[1], face.y[1]);
+            LOGD("MTCNN detectface get face %d %d %d %d", face.x[0], face.y[0], face.x[1], face.y[1]);
             int res = faceinfo2float(out, &face);
-            LOGD("faceinfo2float get face %f %f %f %f", out[0],out[1],out[2],out[3]);
+            LOGD("MTCNN detectface faceinfo2float get face %f %f %f %f", out[0],out[1],out[2],out[3]);
             out=out+res;
         }
 
         FaceInfo face = faceinfo[0];
         vector<float> feature = face_exactfeature(in, face);
 
-        LOGD("get feature %d ", feature.size());
+        // scale size for landmark
+        for(int i = 0; i < cnt; i++){
+
+            // landmark
+            for(int j = 4; j <= 13; j+=2){
+                detect_out[gap * i + j]  = detect_out[gap * i + j] / sizeh ;
+                detect_out[gap * i + j + 1]  = detect_out[gap * i + j + 1] / sizev ;
+            }
+
+        }
+
+        LOGD("MTCNN detectface get feature %d ", feature.size());
         float feature_f[256];
         jfloatArray detect = env->NewFloatArray(cnt*gap + 128);
-        LOGD("vect2float %d", feature.size());
+        LOGD("MTCNN detectface vect2float %d", feature.size());
         out = feature_f;
         for(int i = 0 ; i < feature.size(); i++)
         {
@@ -152,9 +163,9 @@ Java_com_chenty_testncnn_CameraNcnnFragment_detectface(JNIEnv *env, jobject thiz
         }
         //vect2float(feature_f, feature);
         //memcpy(feature_f, &feature[0], feature.size()*sizeof(float));
-        LOGD("set feature %d ", feature.size());
+//        LOGD("MTCNN detectface set feature %d ", feature.size());
         env->SetFloatArrayRegion(detect,0,128, feature_f);
-        LOGD("set face %d ", cnt*gap);
+        LOGD("MTCNN detectface set face count %d, gap %d ", cnt, gap);
         env->SetFloatArrayRegion(detect, 128, cnt*gap, detect_out);
 
         return detect;
