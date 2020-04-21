@@ -33,6 +33,7 @@ file(GLOB arcface_files "./arcface/*.cpp")
 set(NCNN_SRC_LISTS
         ${arcface_files}
         jni.cpp
+        jni_ssd_detect.cpp
         detect/FaceDetector.cpp
         detect/FaceDetector.h
         )

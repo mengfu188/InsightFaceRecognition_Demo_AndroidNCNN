@@ -176,6 +176,7 @@ public class AutoFitSurfaceView extends SurfaceView implements SurfaceHolder.Cal
             }
 
             try {
+                Log.d(TAG, "Draw: start");
                 mCanvas = mHolder.lockCanvas();
                 mWidth = mCanvas.getWidth();
                 mHeight = mCanvas.getHeight();
@@ -191,6 +192,7 @@ public class AutoFitSurfaceView extends SurfaceView implements SurfaceHolder.Cal
                 if(result !=null) {
                     DrawDetectFace(result, (int) mWidth, (int) mHeight, rolatedeg);
                 }
+                Log.d(TAG, "Draw: end");
             }catch (Exception e){
                 Log.d(TAG, "e="+e);
                 mHolder.unlockCanvasAndPost(mCanvas);

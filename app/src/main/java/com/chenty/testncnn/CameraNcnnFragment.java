@@ -15,12 +15,11 @@
  */
 
 /**
- * @ClassName:     CameraNcnnFragment
- * @Description:   CameraNcnnFragment to start camera and detcet imgs
- *
- * @author         chenty
- * @version        V1.0
- * @Date           2019.08.16
+ * @ClassName: CameraNcnnFragment
+ * @Description: CameraNcnnFragment to start camera and detcet imgs
+ * @author chenty
+ * @version V1.0
+ * @Date 2019.08.16
  */
 
 package com.chenty.testncnn;
@@ -94,6 +93,7 @@ public class CameraNcnnFragment extends Fragment
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
     private static final int REQUEST_CAMERA_PERMISSION = 1;
     private static final String FRAGMENT_DIALOG = "dialog";
+    private static final String DETECT_TYPE = "SSD";
 
     static {
         ORIENTATIONS.append(Surface.ROTATION_0, 90);
@@ -114,8 +114,7 @@ public class CameraNcnnFragment extends Fragment
 
     private final SurfaceView.OnAttachStateChangeListener mSurfaveViewListener =
             new SurfaceView.OnAttachStateChangeListener() {
-                public void onViewAttachedToWindow(View v)
-                {
+                public void onViewAttachedToWindow(View v) {
 
                     Log.d(TAG, "onViewAttachedToWindow: init mtcnn start");
                     initMtcnn(MainActivity.manager);
@@ -125,9 +124,7 @@ public class CameraNcnnFragment extends Fragment
                     intiArcface(MainActivity.manager);
                     Log.d(TAG, "onViewAttachedToWindow: init arcface end");
 
-                    Log.d(TAG, "onViewAttachedToWindow: init ssd start");
-                    initSsd(MainActivity.manager);
-                    Log.d(TAG, "onViewAttachedToWindow: init ssd end");
+
 
 
                     Log.i(TAG, "onViewAttachedToWindow " + MAX_PREVIEW_WIDTH + "X" + MAX_PREVIEW_HEIGHT);
@@ -135,8 +132,7 @@ public class CameraNcnnFragment extends Fragment
                     openCamera(displaySize.x, displaySize.y);
                 }
 
-                public void onViewDetachedFromWindow(View v)
-                {
+                public void onViewDetachedFromWindow(View v) {
 
                 }
             };
@@ -225,7 +221,6 @@ public class CameraNcnnFragment extends Fragment
     private float[] targetfaceimg_feature = null;
 
 
-
     private void notifyimgupdate() {
         Message message = Message.obtain(imgupdatehandle);
         message.sendToTarget();
@@ -238,7 +233,7 @@ public class CameraNcnnFragment extends Fragment
         public void handleMessage(android.os.Message msg) {
             // 处理从子线程发送过来的消息
             captureface.setImageBitmap(capturefaceimg);
-            resulttextview.setText(getString(R.string.equal) + ": " + ((float)Math.round(facesimilar *10000))/100 + "%");
+            resulttextview.setText(getString(R.string.equal) + ": " + ((float) Math.round(facesimilar * 10000)) / 100 + "%");
 
 
         }
@@ -255,7 +250,7 @@ public class CameraNcnnFragment extends Fragment
             int width = im.getWidth();
             int height = im.getHeight();
 
-            Log.d(TAG, "onImageAvailable "+ width + "X" + height + "X" + chcnt);
+            Log.d(TAG, "onImageAvailable " + width + "X" + height + "X" + chcnt);
 
             ByteBuffer bufferY = im.getPlanes()[0].getBuffer();
             ByteBuffer bufferU = im.getPlanes()[1].getBuffer();
@@ -269,7 +264,8 @@ public class CameraNcnnFragment extends Fragment
             byte[] yuv = yuvbuffer.array();
 
 
-            mBitmap = mSurfaceView.yuvToBitmap(yuv,width,height);
+            mBitmap = mSurfaceView.yuvToBitmap(yuv, width, height);
+            Bitmap bitmap = Bitmap.createBitmap(mBitmap);
             //mDetect_result
             //0 = 0.3683735
             //1 = 0.33241174
@@ -292,91 +288,123 @@ public class CameraNcnnFragment extends Fragment
             //18 = 0.14723615
             //19 = 0.1926438
             mSurfaceView.Draw(mBitmap, mDetect_result, 90);
-            if (mDetect_result != null){
 
-                for(int i = 0; i < mDetect_result.length; i++){
-                    mDetect_result[i] += 0.001;
-                }
-
-            }
-
-
-
+//            if (mDetect_result != null) {
+//                for (int i = 0; i < mDetect_result.length; i++) {
+//                    mDetect_result[i] += 0.001;
+//                }
+//            }
 
             //split process function to prevent img reflash stop
-            if(!mDetect_isbusy)
-            {
+            if (!mDetect_isbusy) {
                 mDetect_isbusy = true;
                 new Thread(() -> {
-                    float[] result = ncnnprocess_imgyuv(yuv, width, height);
 
-                    if(result != null) {
+                    if (DETECT_TYPE == "MTCNN") {
 
-                        mDetect_result = Arrays.copyOfRange(result, 128, result.length);
-                        Log.d(TAG, "detect result " + mDetect_result.length + " "
-                                + mDetect_result[0] + " " + mDetect_result[1] + " " + mDetect_result[2] + " " + mDetect_result[3] + " "
-                                +  mDetect_result[4] + " "
-                        );
+                        float[] result = ncnnprocess_imgyuv(yuv, width, height);
 
-                        int x,y,xe,ye;
-                        double expand = 0.05f;
-                        float[] firstface = Arrays.copyOfRange(result, 128, 128+20);;
+                        if (result != null) {
 
-                        firstface[0] -= expand;
-                        firstface[1] -= expand;
-                        firstface[2] += expand;
-                        firstface[3] += expand;
+                            mDetect_result = Arrays.copyOfRange(result, 128, result.length);
+                            Log.d(TAG, "detect result " + mDetect_result.length + " "
+                                    + mDetect_result[0] + " " + mDetect_result[1] + " " + mDetect_result[2] + " " + mDetect_result[3] + " "
+                                    + mDetect_result[4] + " "
+                            );
 
-                        for(int i = 0 ; i < 4 ; i++)
-                        {
-                            if(firstface[i] > 1)
-                                firstface[i] = 1;
-                            if(firstface[i] < 0)
-                                firstface[i] = 0;
+                            int x, y, xe, ye;
+                            double expand = 0.05f;
+                            float[] firstface = Arrays.copyOfRange(result, 128, 128 + 20);
+
+                            firstface[0] -= expand;
+                            firstface[1] -= expand;
+                            firstface[2] += expand;
+                            firstface[3] += expand;
+
+                            for (int i = 0; i < 4; i++) {
+                                if (firstface[i] > 1)
+                                    firstface[i] = 1;
+                                if (firstface[i] < 0)
+                                    firstface[i] = 0;
+                            }
+
+                            x = (int) (firstface[0] * mBitmap.getWidth());
+                            y = (int) (firstface[1] * mBitmap.getHeight());
+                            xe = (int) (firstface[2] * mBitmap.getWidth());
+                            ye = (int) (firstface[3] * mBitmap.getHeight());
+
+                            Log.d(TAG, "onImageAvailable: " + firstface[5] + " " + firstface[5] * mBitmap.getWidth());
+
+                            capturefaceimg = Bitmap.createBitmap(mBitmap, x, y, xe - x, ye - y);
+
+                            capturefaceimg_feature = Arrays.copyOfRange(result, 0, 128);
+
+                            if (targetfaceimg_feature != null) {
+                                facesimilar = compareface(targetfaceimg_feature, capturefaceimg_feature);
+                            }
+                            notifyimgupdate();
                         }
-
-                        x = (int)(firstface[0] * mBitmap.getWidth());
-                        y = (int)(firstface[1] * mBitmap.getHeight());
-                        xe = (int)(firstface[2] * mBitmap.getWidth());
-                        ye = (int)(firstface[3] * mBitmap.getHeight());
-
-
-//                        Canvas canvas = new Canvas(mBitmap);
-//                        Paint paint = new Paint();
-//                        paint.setColor(Color.RED);
-//                        paint.setStyle(Paint.Style.STROKE);//不填充
-//                        paint.setStrokeWidth(5);  //线的宽度
-//                        canvas.drawRect(x, y, x+50, y+50, paint);
+                    }else if (DETECT_TYPE == "SSD") {
+//                            result
+//                            arr[0] = bbox_.s;
+//                            arr[1] = bbox_.x1;
+//                            arr[2] = bbox_.y1;
+//                            arr[3] = bbox_.x2;
+//                            arr[4] = bbox_.y2;
 //
-//                        canvas.drawPoints(new float[]{
-//                                firstface[5] , firstface[6] ,
-//                                firstface[7], firstface[8] ,
-//                                firstface[9], firstface[10] ,
-//                                firstface[11], firstface[12] ,
-//                                firstface[13], firstface[14]
-//                        }, paint);//画多个点
-                        Log.d(TAG, "onImageAvailable: " + firstface[5] + " " + firstface[5] * mBitmap.getWidth());
+//                            arr[5] = bbox_.point[0]._x;
+//                            arr[6] = bbox_.point[0]._y;
+//                            arr[7] = bbox_.point[1]._x;
+//                            arr[8] = bbox_.point[1]._y;
+//                            arr[9] = bbox_.point[2]._x;
+//                            arr[10] = bbox_.point[2]._y;
+//                            arr[11] = bbox_.point[3]._x;
+//                            arr[12] = bbox_.point[3]._y;
+//                            arr[13] = bbox_.point[4]._x;
+//                            arr[14] = bbox_.point[4]._y;
+                        Log.d(TAG, "onImageAvailable: ssd detect start");
+                        float[] result = FaceDetect.detect(bitmap);
+                        Log.d(TAG, "onImageAvailable: ssd detect end");
+                        if(result != null){
+//                            [from, to)
+                            mDetect_result = Arrays.copyOfRange(result, 1, 15);
+                            Log.d(TAG, "detect result " + mDetect_result.length + " "
+                                    + mDetect_result[0] + " " + mDetect_result[1] + " " + mDetect_result[2] + " " + mDetect_result[3] + " "
+                                    + mDetect_result[4] + " "
+                            );
 
-                        capturefaceimg = Bitmap.createBitmap(mBitmap, x, y, xe-x, ye-y);
-//                        capturefaceimg =
+                            int x, y, xe, ye;
+                            double expand = 0.05f;
+                            float[] firstface = Arrays.copyOfRange(result, 1, 15);
 
+                            firstface[0] -= expand;
+                            firstface[1] -= expand;
+                            firstface[2] += expand;
+                            firstface[3] += expand;
 
-                        capturefaceimg_feature =  Arrays.copyOfRange(result, 0, 128);;
+                            for (int i = 0; i < 4; i++) {
+                                if (firstface[i] > 1)
+                                    firstface[i] = 1;
+                                if (firstface[i] < 0)
+                                    firstface[i] = 0;
+                            }
 
-                        if(targetfaceimg_feature != null)
-                        {
-                            facesimilar = compareface(targetfaceimg_feature, capturefaceimg_feature);
+                            x = (int) (firstface[0] * bitmap.getWidth());
+                            y = (int) (firstface[1] * bitmap.getHeight());
+                            xe = (int) (firstface[2] * bitmap.getWidth());
+                            ye = (int) (firstface[3] * bitmap.getHeight());
+
+                            Log.d(TAG, "onImageAvailable: cut to cpature " + firstface[5] + " " + firstface[5] * bitmap.getWidth());
+
+                            capturefaceimg = Bitmap.createBitmap(bitmap, x, y, xe - x, ye - y);
+
+                            notifyimgupdate();
                         }
-                        notifyimgupdate();
+
                     }
                     mDetect_isbusy = false;
                 }).start();
             }
-
-
-
-
-
 
             im.close();
         }
@@ -449,7 +477,7 @@ public class CameraNcnnFragment extends Fragment
             if (option.getWidth() <= maxWidth && option.getHeight() <= maxHeight &&
                     option.getHeight() == option.getWidth() * h / w) {
                 if (option.getWidth() >= textureViewWidth &&
-                    option.getHeight() >= textureViewHeight) {
+                        option.getHeight() >= textureViewHeight) {
                     bigEnough.add(option);
                 } else {
                     notBigEnough.add(option);
@@ -489,10 +517,10 @@ public class CameraNcnnFragment extends Fragment
         view.findViewById(R.id.info).setOnClickListener(this);
         view.findViewById(R.id.camswitch).setOnClickListener(this);
         view.findViewById(R.id.capture).setOnClickListener(this);
-        captureface = (ImageView)view.findViewById(R.id.captureface);
-        targetface = (ImageView)view.findViewById(R.id.targetface);
+        captureface = (ImageView) view.findViewById(R.id.captureface);
+        targetface = (ImageView) view.findViewById(R.id.targetface);
         mSurfaceView = (AutoFitSurfaceView) view.findViewById(R.id.texture);
-        resulttextview = (TextView)view.findViewById(R.id.resulttext);
+        resulttextview = (TextView) view.findViewById(R.id.resulttext);
     }
 
     @Override
@@ -550,6 +578,7 @@ public class CameraNcnnFragment extends Fragment
     }
 
     Integer curfacing = CameraCharacteristics.LENS_FACING_FRONT;
+
     /**
      * Sets up member variables related to camera.
      *
@@ -583,8 +612,6 @@ public class CameraNcnnFragment extends Fragment
                 // For still image captures, we use the largest available size.
                 Size largest = Collections.max(outlist, new CompareSizesByArea());
                 Log.i(TAG, "Output =" + largest);
-
-
 
 
                 // Find out if we need to swap dimension to get the preview size relative to sensor
@@ -642,11 +669,9 @@ public class CameraNcnnFragment extends Fragment
 
 
                 //fix size 1280XN
-                for(Size item : outlist)
-                {
-                    if(item.getWidth() == 1280)
-                    {
-                        Log.i(TAG, "get  target resv is " +item.getWidth() + "X" + item.getHeight());
+                for (Size item : outlist) {
+                    if (item.getWidth() == 1280) {
+                        Log.i(TAG, "get  target resv is " + item.getWidth() + "X" + item.getHeight());
                         mPreviewSize = item;
                     }
                 }
@@ -813,7 +838,6 @@ public class CameraNcnnFragment extends Fragment
             mPreviewYUVRequestBuilder.addTarget(mImageReader.getSurface());
 
 
-
             // Here, we create a CameraCaptureSession for camera preview.
             mCameraDevice.createCaptureSession(Arrays.asList(mImageReader.getSurface()),
                     new CameraCaptureSession.StateCallback() {
@@ -870,13 +894,11 @@ public class CameraNcnnFragment extends Fragment
         switch (view.getId()) {
             //
             case R.id.capture: {
-                if(capturefaceimg != null) {
+                if (capturefaceimg != null) {
                     targetfaceimg = capturefaceimg;
                     targetfaceimg_feature = capturefaceimg_feature;
                     targetface.setImageBitmap(targetfaceimg);
-                }
-                else
-                {
+                } else {
                     Activity activity = getActivity();
                     if (null != activity) {
                         new AlertDialog.Builder(activity)
@@ -889,12 +911,9 @@ public class CameraNcnnFragment extends Fragment
             }
             case R.id.camswitch: {
                 closeCamera();
-                if(curfacing != CameraCharacteristics.LENS_FACING_BACK)
-                {
+                if (curfacing != CameraCharacteristics.LENS_FACING_BACK) {
                     curfacing = CameraCharacteristics.LENS_FACING_BACK;
-                }
-                else
-                {
+                } else {
                     curfacing = CameraCharacteristics.LENS_FACING_FRONT;
                 }
                 openCamera(displaySize.x, displaySize.y);
@@ -1043,16 +1062,16 @@ public class CameraNcnnFragment extends Fragment
     }
 
 
-    private float[] ncnnprocess_imgyuv(byte[] data, int width, int height)
-    {
+    private float[] ncnnprocess_imgyuv(byte[] data, int width, int height) {
         return detectface(data, width, height);
     }
 
     public native float[] detectface(byte[] data, int width, int height);
+
     public native float compareface(float[] face0, float[] face1);
+
     public native void initMtcnn(AssetManager assetManager);
+
     public native void intiArcface(AssetManager assetManager);
-    public native void initSsd(AssetManager assetManager);
-    public native float[] detectSsd(Bitmap data);
 
 }
