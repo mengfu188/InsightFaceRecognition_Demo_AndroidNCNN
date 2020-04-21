@@ -396,11 +396,30 @@ public class CameraNcnnFragment extends Fragment
 
                             Log.d(TAG, "onImageAvailable: cut to cpature " + firstface[5] + " " + firstface[5] * bitmap.getWidth());
 
+                            Canvas canvas = new Canvas(bitmap);
+
+                            Paint paint = new Paint();
+                            paint.setColor(Color.RED);
+                            paint.setStyle(Paint.Style.STROKE);//不填充
+                            paint.setStrokeWidth(20);  //线的宽度
+                            paint.setStyle(Paint.Style.FILL);
+
+                            for(int j = 4; j <= 13; j+=2){
+                                firstface[j] = Util.clamp(firstface[j] * width, 0, width);
+                                firstface[j + 1] = Util.clamp(firstface[j + 1] * height, 0, height);
+
+                                canvas.drawPoint(firstface[j], firstface[j + 1], paint);
+                            }
+
                             capturefaceimg = Bitmap.createBitmap(bitmap, x, y, xe - x, ye - y);
 
                             notifyimgupdate();
                         }
-
+//                        try {
+//                            Thread.sleep(100);
+//                        } catch (InterruptedException e) {
+//                            e.printStackTrace();
+//                        }
                     }
                     mDetect_isbusy = false;
                 }).start();

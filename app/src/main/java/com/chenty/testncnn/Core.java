@@ -225,6 +225,12 @@ class Util {
         return ret;
     }
 
+    public static float clamp(float val, float min, float max) {
+        return Math.max(min, Math.min(max, val));
+    }
+    public static int clamp(int val, int min, int max) {
+        return Math.max(min, Math.min(max, val));
+    }
     public static float[] int2Float(int[] array){
         float[] ret = new float[array.length];
         for (int i = 0; i < ret.length; i++){
