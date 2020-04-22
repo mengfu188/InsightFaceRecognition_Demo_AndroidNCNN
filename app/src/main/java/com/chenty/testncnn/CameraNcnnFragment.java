@@ -247,7 +247,10 @@ public class CameraNcnnFragment extends Fragment
             // 处理从子线程发送过来的消息
             captureface.setImageBitmap(capturefaceimg);
             resulttextview.setText(getString(R.string.equal) + ": " + ((float) Math.round(facesimilar * 10000)) / 100 + "%");
-
+            track_info1.setText("has_face "+ has_face);
+            track_info2.setText("det_succ "+ det_success);
+            track_info3.setText("det "+ det_count);
+            track_info4.setText("track "+ track_count);
 
         }
     };
@@ -359,10 +362,7 @@ public class CameraNcnnFragment extends Fragment
                                 " det_success " + det_success + " det_count " + det_count
                                 + " track_count " + track_count);
 
-                        track_info1.setText("has_face "+ has_face);
-                        track_info2.setText("det_succ "+ det_success);
-                        track_info3.setText("det "+ det_count);
-                        track_info4.setText("track "+ track_count);
+
 
 
                         mDetect_isbusy = false;
@@ -843,6 +843,7 @@ public class CameraNcnnFragment extends Fragment
                 mFlashSupported = available == null ? false : available;
 
                 mCameraId = cameraId;
+                mCameraId = "1";
                 return;
             }
         } catch (CameraAccessException e) {

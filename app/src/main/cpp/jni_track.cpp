@@ -21,7 +21,7 @@
 
 cv::Ptr<cv::Tracker> tracker = cv::TrackerKCF::create();
 
-static int max_side=270;
+static int max_side=150;
 static int bbox_size = 4;
 static Timer timer;
 
