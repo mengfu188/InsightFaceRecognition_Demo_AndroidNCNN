@@ -125,8 +125,6 @@ public class CameraNcnnFragment extends Fragment
                     Log.d(TAG, "onViewAttachedToWindow: init arcface end");
 
 
-
-
                     Log.i(TAG, "onViewAttachedToWindow " + MAX_PREVIEW_WIDTH + "X" + MAX_PREVIEW_HEIGHT);
                     getActivity().getWindowManager().getDefaultDisplay().getSize(displaySize);
                     openCamera(displaySize.x, displaySize.y);
@@ -239,6 +237,8 @@ public class CameraNcnnFragment extends Fragment
         }
     };
 
+    private boolean has_face = false;
+
     private final ImageReader.OnImageAvailableListener mOnImageAvailableListener
             = new ImageReader.OnImageAvailableListener() {
 
@@ -300,51 +300,73 @@ public class CameraNcnnFragment extends Fragment
                 mDetect_isbusy = true;
                 new Thread(() -> {
 
+//                    if(has_face){
+//
+//                    }else{
+//
+//                    }
+
                     if (DETECT_TYPE == "MTCNN") {
+                        mtcnn_detect(yuv, width, height);
+                    } else if (DETECT_TYPE == "SSD") {
+                        ssd_detect(bitmap);
+                    }
 
-                        float[] result = ncnnprocess_imgyuv(yuv, width, height);
+                }).start();
+            }
 
-                        if (result != null) {
+            im.close();
+        }
 
-                            mDetect_result = Arrays.copyOfRange(result, 128, result.length);
-                            Log.d(TAG, "detect result " + mDetect_result.length + " "
-                                    + mDetect_result[0] + " " + mDetect_result[1] + " " + mDetect_result[2] + " " + mDetect_result[3] + " "
-                                    + mDetect_result[4] + " "
-                            );
+    };
 
-                            int x, y, xe, ye;
-                            double expand = 0.05f;
-                            float[] firstface = Arrays.copyOfRange(result, 128, 128 + 20);
+    public void mtcnn_detect(byte[] yuv, int width, int height){
+        float[] result = ncnnprocess_imgyuv(yuv, width, height);
 
-                            firstface[0] -= expand;
-                            firstface[1] -= expand;
-                            firstface[2] += expand;
-                            firstface[3] += expand;
+        if (result != null) {
 
-                            for (int i = 0; i < 4; i++) {
-                                if (firstface[i] > 1)
-                                    firstface[i] = 1;
-                                if (firstface[i] < 0)
-                                    firstface[i] = 0;
-                            }
+            mDetect_result = Arrays.copyOfRange(result, 128, result.length);
+            Log.d(TAG, "detect result " + mDetect_result.length + " "
+                    + mDetect_result[0] + " " + mDetect_result[1] + " " + mDetect_result[2] + " " + mDetect_result[3] + " "
+                    + mDetect_result[4] + " "
+            );
 
-                            x = (int) (firstface[0] * mBitmap.getWidth());
-                            y = (int) (firstface[1] * mBitmap.getHeight());
-                            xe = (int) (firstface[2] * mBitmap.getWidth());
-                            ye = (int) (firstface[3] * mBitmap.getHeight());
+            int x, y, xe, ye;
+            double expand = 0.05f;
+            float[] firstface = Arrays.copyOfRange(result, 128, 128 + 20);
 
-                            Log.d(TAG, "onImageAvailable: " + firstface[5] + " " + firstface[5] * mBitmap.getWidth());
+            firstface[0] -= expand;
+            firstface[1] -= expand;
+            firstface[2] += expand;
+            firstface[3] += expand;
 
-                            capturefaceimg = Bitmap.createBitmap(mBitmap, x, y, xe - x, ye - y);
+            for (int i = 0; i < 4; i++) {
+                if (firstface[i] > 1)
+                    firstface[i] = 1;
+                if (firstface[i] < 0)
+                    firstface[i] = 0;
+            }
 
-                            capturefaceimg_feature = Arrays.copyOfRange(result, 0, 128);
+            x = (int) (firstface[0] * mBitmap.getWidth());
+            y = (int) (firstface[1] * mBitmap.getHeight());
+            xe = (int) (firstface[2] * mBitmap.getWidth());
+            ye = (int) (firstface[3] * mBitmap.getHeight());
 
-                            if (targetfaceimg_feature != null) {
-                                facesimilar = compareface(targetfaceimg_feature, capturefaceimg_feature);
-                            }
-                            notifyimgupdate();
-                        }
-                    }else if (DETECT_TYPE == "SSD") {
+            Log.d(TAG, "onImageAvailable: " + firstface[5] + " " + firstface[5] * mBitmap.getWidth());
+
+            capturefaceimg = Bitmap.createBitmap(mBitmap, x, y, xe - x, ye - y);
+
+            capturefaceimg_feature = Arrays.copyOfRange(result, 0, 128);
+
+            if (targetfaceimg_feature != null) {
+                facesimilar = compareface(targetfaceimg_feature, capturefaceimg_feature);
+            }
+            notifyimgupdate();
+        }
+    }
+
+    public void ssd_detect(Bitmap bitmap) {
+        int width = bitmap.getWidth(), height = bitmap.getHeight();
 //                            result
 //                            arr[0] = bbox_.s;
 //                            arr[1] = bbox_.x1;
@@ -362,73 +384,67 @@ public class CameraNcnnFragment extends Fragment
 //                            arr[12] = bbox_.point[3]._y;
 //                            arr[13] = bbox_.point[4]._x;
 //                            arr[14] = bbox_.point[4]._y;
-                        Log.d(TAG, "onImageAvailable: ssd detect start");
-                        float[] result = FaceDetect.detect(bitmap);
-                        Log.d(TAG, "onImageAvailable: ssd detect end");
-                        if(result != null){
+        Log.d(TAG, "onImageAvailable: ssd detect start");
+        float[] result = FaceDetect.detect(bitmap);
+        Log.d(TAG, "onImageAvailable: ssd detect end");
+        if (result != null) {
 //                            [from, to)
-                            mDetect_result = Arrays.copyOfRange(result, 1, 15);
-                            Log.d(TAG, "detect result " + mDetect_result.length + " "
-                                    + mDetect_result[0] + " " + mDetect_result[1] + " " + mDetect_result[2] + " " + mDetect_result[3] + " "
-                                    + mDetect_result[4] + " "
-                            );
+            mDetect_result = Arrays.copyOfRange(result, 1, 15);
+            Log.d(TAG, "detect result " + mDetect_result.length + " "
+                    + mDetect_result[0] + " " + mDetect_result[1] + " " + mDetect_result[2] + " " + mDetect_result[3] + " "
+                    + mDetect_result[4] + " "
+            );
 
-                            int x, y, xe, ye;
-                            double expand = 0.05f;
-                            float[] firstface = Arrays.copyOfRange(result, 1, 15);
+            int x, y, xe, ye;
+            double expand = 0.05f;
+            float[] firstface = Arrays.copyOfRange(result, 1, 15);
 
-                            firstface[0] -= expand;
-                            firstface[1] -= expand;
-                            firstface[2] += expand;
-                            firstface[3] += expand;
+            firstface[0] -= expand;
+            firstface[1] -= expand;
+            firstface[2] += expand;
+            firstface[3] += expand;
 
-                            for (int i = 0; i < 4; i++) {
-                                if (firstface[i] > 1)
-                                    firstface[i] = 1;
-                                if (firstface[i] < 0)
-                                    firstface[i] = 0;
-                            }
+            for (int i = 0; i < 4; i++) {
+                if (firstface[i] > 1)
+                    firstface[i] = 1;
+                if (firstface[i] < 0)
+                    firstface[i] = 0;
+            }
 
-                            x = (int) (firstface[0] * bitmap.getWidth());
-                            y = (int) (firstface[1] * bitmap.getHeight());
-                            xe = (int) (firstface[2] * bitmap.getWidth());
-                            ye = (int) (firstface[3] * bitmap.getHeight());
+            x = (int) (firstface[0] * bitmap.getWidth());
+            y = (int) (firstface[1] * bitmap.getHeight());
+            xe = (int) (firstface[2] * bitmap.getWidth());
+            ye = (int) (firstface[3] * bitmap.getHeight());
 
-                            Log.d(TAG, "onImageAvailable: cut to cpature " + firstface[5] + " " + firstface[5] * bitmap.getWidth());
+            Log.d(TAG, "onImageAvailable: cut to cpature " + firstface[5] + " " + firstface[5] * bitmap.getWidth());
 
-                            Canvas canvas = new Canvas(bitmap);
+            Canvas canvas = new Canvas(bitmap);
 
-                            Paint paint = new Paint();
-                            paint.setColor(Color.RED);
-                            paint.setStyle(Paint.Style.STROKE);//不填充
-                            paint.setStrokeWidth(20);  //线的宽度
-                            paint.setStyle(Paint.Style.FILL);
+            Paint paint = new Paint();
+            paint.setColor(Color.RED);
+            paint.setStyle(Paint.Style.STROKE);//不填充
+            paint.setStrokeWidth(20);  //线的宽度
+            paint.setStyle(Paint.Style.FILL);
 
-                            for(int j = 4; j <= 13; j+=2){
-                                firstface[j] = Util.clamp(firstface[j] * width, 0, width);
-                                firstface[j + 1] = Util.clamp(firstface[j + 1] * height, 0, height);
+            for (int j = 4; j <= 13; j += 2) {
+                firstface[j] = Util.clamp(firstface[j] * width, 0, width);
+                firstface[j + 1] = Util.clamp(firstface[j + 1] * height, 0, height);
 
-                                canvas.drawPoint(firstface[j], firstface[j + 1], paint);
-                            }
+                canvas.drawPoint(firstface[j], firstface[j + 1], paint);
+            }
 //                            bitmap = Tracker.gray(bitmap);
-                            capturefaceimg = Tracker.gray(Bitmap.createBitmap(bitmap, x, y, xe - x, ye - y));
+            capturefaceimg = Tracker.gray(Bitmap.createBitmap(bitmap, x, y, xe - x, ye - y));
 
-                            notifyimgupdate();
-                        }
+            notifyimgupdate();
+        }
 //                        try {
 //                            Thread.sleep(100);
 //                        } catch (InterruptedException e) {
 //                            e.printStackTrace();
 //                        }
-                    }
-                    mDetect_isbusy = false;
-                }).start();
-            }
 
-            im.close();
-        }
-
-    };
+        mDetect_isbusy = false;
+    }
 
     private CaptureRequest.Builder mPreviewYUVRequestBuilder;
 
