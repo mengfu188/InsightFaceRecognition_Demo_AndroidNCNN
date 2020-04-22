@@ -21,7 +21,7 @@
 
 cv::Ptr<cv::Tracker> tracker = cv::TrackerKCF::create();
 
-static int max_side=320;
+static int max_side=270;
 static int bbox_size = 4;
 static Timer timer;
 
@@ -79,6 +79,7 @@ Java_com_chenty_testncnn_Tracker_init(JNIEnv *env, jclass clazz, jintArray buf, 
 
 
     env->ReleaseIntArrayElements(buf, cbuf, 0);
+//    env->ReleaseFloatArrayElements(bbox, cbbox, 0);
 //    env->ReleaseIntArrayElements(bbox, cbbox, 0);
     return false;
 }extern "C"
@@ -142,6 +143,7 @@ Java_com_chenty_testncnn_Tracker_update(JNIEnv *env, jclass clazz, jintArray buf
     env->SetFloatArrayRegion(resultInfo, 0, bbox_size, result);
 
     env->ReleaseIntArrayElements(buf, cbuf, 0);
+//    env->ReleaseFloatArrayElements(bbox, cbbox, 0);
 //    env->ReleaseIntArrayElements(bbox, cbbox, 0);
     return resultInfo;
 }extern "C"

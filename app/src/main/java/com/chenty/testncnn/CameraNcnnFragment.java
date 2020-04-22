@@ -84,7 +84,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class CameraNcnnFragment extends Fragment
@@ -94,6 +99,14 @@ public class CameraNcnnFragment extends Fragment
     private static final int REQUEST_CAMERA_PERMISSION = 1;
     private static final String FRAGMENT_DIALOG = "dialog";
     private static final String DETECT_TYPE = "SSD";
+
+    private static RejectedExecutionHandler discardPolicy = new ThreadPoolExecutor.DiscardPolicy();
+
+    private static ExecutorService pool = new ThreadPoolExecutor(1, 1,
+            0L, TimeUnit.MILLISECONDS,
+            new LinkedBlockingQueue<Runnable>(),
+            Executors.defaultThreadFactory(),
+            discardPolicy);
 
     static {
         ORIENTATIONS.append(Surface.ROTATION_0, 90);
@@ -115,7 +128,9 @@ public class CameraNcnnFragment extends Fragment
     private final SurfaceView.OnAttachStateChangeListener mSurfaveViewListener =
             new SurfaceView.OnAttachStateChangeListener() {
                 public void onViewAttachedToWindow(View v) {
-
+                    Log.d(TAG, "onViewAttachedToWindow: init ssd start");
+                    FaceDetect.init(MainActivity.manager);
+                    Log.d(TAG, "onViewAttachedToWindow: init ssd end");
                     Log.d(TAG, "onViewAttachedToWindow: init mtcnn start");
                     initMtcnn(MainActivity.manager);
                     Log.d(TAG, "onViewAttachedToWindow: init mtcnn end");
@@ -300,49 +315,61 @@ public class CameraNcnnFragment extends Fragment
 //            }
 
             //split process function to prevent img reflash stop
-            if (!mDetect_isbusy) {
-                mDetect_isbusy = true;
+
+//            );
+
                 new Thread(() -> {
+                    if (!mDetect_isbusy) {
+                        mDetect_isbusy = true;
 
-                    if (has_face) {
-                        float[] result = Tracker.update(bitmap, roi);
-                        if (result[0] == 0 && result[1] == 0 && result[2] == 0 && result[3] == 0) {
-                            // track failed
-                            has_face = false;
-                            Tracker.reset();
+//                pool.execute(() -> {
+                        if (has_face) {
+                            roi = Tracker.update(bitmap, roi);
+                            mDetect_result = roi;
+                            if (roi[0] == 0 && roi[1] == 0 && roi[2] == 0 && roi[3] == 0) {
+                                // track failed
+                                has_face = false;
+                                Tracker.reset();
+                            } else {
+                                track_count += 1;
+//                                roi = roi;
+                                cutBoxAndShowInCapture(bitmap, roi);
+                            }
+
                         } else {
-                            track_count += 1;
-                            roi = result;
-                            cutBoxAndShowInCapture(bitmap, result);
-                        }
 
-                    } else {
+                            if (DETECT_TYPE == "MTCNN") {
+                                mtcnn_detect(yuv, width, height);
+                            } else if (DETECT_TYPE == "SSD") {
+                                ssd_detect(bitmap);
+                            }
 
-                        if (DETECT_TYPE == "MTCNN") {
-                            mtcnn_detect(yuv, width, height);
-                        } else if (DETECT_TYPE == "SSD") {
-                            ssd_detect(bitmap);
-                        }
+                            if (det_success) {
+                                has_face = true;
+                                roi = new float[]{mDetect_result[0], mDetect_result[1], mDetect_result[2], mDetect_result[3]};
+                                Log.d(TAG, "onImageAvailable: tracker init");
+                                Tracker.init(bitmap, roi);
+                            } else { // det failed
 
-                        if (det_success) {
-                            has_face = true;
-                            roi = new float[]{mDetect_result[0], mDetect_result[1], mDetect_result[2], mDetect_result[3]};
-                            Log.d(TAG, "onImageAvailable: tracker init");
-                            Tracker.init(bitmap, roi);
-                        } else { // det failed
+                            }
 
                         }
 
+                        Log.d(TAG, "onImageAvailable: has_face " + has_face +
+                                " det_success " + det_success + " det_count " + det_count
+                                + " track_count " + track_count);
+
+                        track_info1.setText("has_face "+ has_face);
+                        track_info2.setText("det_succ "+ det_success);
+                        track_info3.setText("det "+ det_count);
+                        track_info4.setText("track "+ track_count);
+
+
+                        mDetect_isbusy = false;
                     }
-
-                    Log.d(TAG, "onImageAvailable: has_face " + has_face +
-                            " det_success " + det_success + " det_count " + det_count
-                            + " track_count " + track_count);
-
-
-                    mDetect_isbusy = false;
+//
                 }).start();
-            }
+
 
             im.close();
         }
@@ -468,7 +495,7 @@ public class CameraNcnnFragment extends Fragment
                 canvas.drawPoint(firstface[j], firstface[j + 1], paint);
             }
 //                            bitmap = Tracker.gray(bitmap);
-            capturefaceimg = Tracker.gray(Bitmap.createBitmap(bitmap, x, y, xe - x, ye - y));
+            capturefaceimg = Bitmap.createBitmap(bitmap, x, y, xe - x, ye - y);
 
             notifyimgupdate();
         } else {
@@ -516,8 +543,9 @@ public class CameraNcnnFragment extends Fragment
             }
 //                            bitmap = Tracker.gray(bitmap);
         }
-        capturefaceimg = Tracker.gray(Bitmap.createBitmap(bitmap, x, y, xe - x, ye - y));
+        capturefaceimg = Bitmap.createBitmap(bitmap, x, y, xe - x, ye - y);
         notifyimgupdate();
+//        captureface.setImageBitmap(capturefaceimg);
     }
 
     private CaptureRequest.Builder mPreviewYUVRequestBuilder;
@@ -619,6 +647,10 @@ public class CameraNcnnFragment extends Fragment
     private ImageView captureface;
     private ImageView targetface;
     private TextView resulttextview;
+    private TextView track_info1 ;
+    private TextView track_info2 ;
+    private TextView track_info3 ;
+    private TextView track_info4 ;
 
     @Override
     public void onViewCreated(final View view, Bundle savedInstanceState) {
@@ -626,10 +658,14 @@ public class CameraNcnnFragment extends Fragment
         view.findViewById(R.id.info).setOnClickListener(this);
         view.findViewById(R.id.camswitch).setOnClickListener(this);
         view.findViewById(R.id.capture).setOnClickListener(this);
-        captureface = (ImageView) view.findViewById(R.id.captureface);
-        targetface = (ImageView) view.findViewById(R.id.targetface);
-        mSurfaceView = (AutoFitSurfaceView) view.findViewById(R.id.texture);
-        resulttextview = (TextView) view.findViewById(R.id.resulttext);
+        captureface =  view.findViewById(R.id.captureface);
+        targetface =  view.findViewById(R.id.targetface);
+        mSurfaceView =  view.findViewById(R.id.texture);
+        resulttextview =  view.findViewById(R.id.resulttext);
+        track_info1 = view.findViewById(R.id.track_info1);
+        track_info2 = view.findViewById(R.id.track_info2);
+        track_info3 = view.findViewById(R.id.track_info3);
+        track_info4 = view.findViewById(R.id.track_info4);
     }
 
     @Override

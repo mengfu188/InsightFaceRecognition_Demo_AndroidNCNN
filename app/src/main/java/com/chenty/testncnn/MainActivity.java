@@ -31,9 +31,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         manager = getAssets();
 
-        Log.d(TAG, "onViewAttachedToWindow: init ssd start");
-        FaceDetect.init(MainActivity.manager);
-        Log.d(TAG, "onViewAttachedToWindow: init ssd end");
 
         if(getRequestedOrientation()!=ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE){
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);

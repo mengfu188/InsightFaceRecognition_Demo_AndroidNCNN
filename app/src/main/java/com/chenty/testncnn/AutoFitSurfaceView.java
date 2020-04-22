@@ -122,6 +122,12 @@ public class AutoFitSurfaceView extends SurfaceView implements SurfaceHolder.Cal
         int prob;
         int gap = 20;
         objcnt = data.length/gap;
+        if (objcnt == 0){
+            objcnt = data.length/14;
+        }
+        if (objcnt == 0){
+            objcnt = data.length/4;
+        }
         for (i = 0 ; i < objcnt ; i++)
         {
             x = (int) (data[i*gap + 0] * (width));
@@ -145,14 +151,16 @@ public class AutoFitSurfaceView extends SurfaceView implements SurfaceHolder.Cal
             //
             DrawRect(new Rect(x,y,xe,ye),Color.RED, "face");
 
-            for(int j = 4; j <= 13; j+=2){
-                data[i*gap + j] = clamp(data[i*gap + j] * width, 0, width);
-                data[i*gap + j + 1] = clamp(data[i*gap + j + 1] * height, 0, height);
+            if(data.length > 4) {
+                for (int j = 4; j <= 13; j += 2) {
+                    data[i * gap + j] = clamp(data[i * gap + j] * width, 0, width);
+                    data[i * gap + j + 1] = clamp(data[i * gap + j + 1] * height, 0, height);
 
-                paint.setColor(Color.GREEN);
-                paint.setStyle(Paint.Style.STROKE);//不填充
-                paint.setStrokeWidth(5);  //线的宽度
-                mCanvas.drawPoint(data[i*gap + j], data[i*gap + j + 1], paint);
+                    paint.setColor(Color.GREEN);
+                    paint.setStyle(Paint.Style.STROKE);//不填充
+                    paint.setStrokeWidth(5);  //线的宽度
+                    mCanvas.drawPoint(data[i * gap + j], data[i * gap + j + 1], paint);
+                }
             }
 
         }
@@ -190,6 +198,7 @@ public class AutoFitSurfaceView extends SurfaceView implements SurfaceHolder.Cal
                 matrix.setScale(scaleWidth, scaleHeight);
                 mCanvas.drawBitmap(mBitmap, matrix, paint);
                 if(result !=null) {
+                    Log.d(TAG, "Draw: face info");
                     DrawDetectFace(result, (int) mWidth, (int) mHeight, rolatedeg);
                 }
                 Log.d(TAG, "Draw: end");
