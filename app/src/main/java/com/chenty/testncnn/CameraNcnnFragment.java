@@ -238,6 +238,10 @@ public class CameraNcnnFragment extends Fragment
     };
 
     private boolean has_face = false;
+    private boolean det_success = false;
+    private int det_count = 0;
+    private int track_count = 0;
+    private float[] roi;
 
     private final ImageReader.OnImageAvailableListener mOnImageAvailableListener
             = new ImageReader.OnImageAvailableListener() {
@@ -300,18 +304,43 @@ public class CameraNcnnFragment extends Fragment
                 mDetect_isbusy = true;
                 new Thread(() -> {
 
-//                    if(has_face){
-//
-//                    }else{
-//
-//                    }
+                    if (has_face) {
+                        float[] result = Tracker.update(bitmap, roi);
+                        if (result[0] == 0 && result[1] == 0 && result[2] == 0 && result[3] == 0) {
+                            // track failed
+                            has_face = false;
+                            Tracker.reset();
+                        } else {
+                            track_count += 1;
+                            roi = result;
+                            cutBoxAndShowInCapture(bitmap, result);
+                        }
 
-                    if (DETECT_TYPE == "MTCNN") {
-                        mtcnn_detect(yuv, width, height);
-                    } else if (DETECT_TYPE == "SSD") {
-                        ssd_detect(bitmap);
+                    } else {
+
+                        if (DETECT_TYPE == "MTCNN") {
+                            mtcnn_detect(yuv, width, height);
+                        } else if (DETECT_TYPE == "SSD") {
+                            ssd_detect(bitmap);
+                        }
+
+                        if (det_success) {
+                            has_face = true;
+                            roi = new float[]{mDetect_result[0], mDetect_result[1], mDetect_result[2], mDetect_result[3]};
+                            Log.d(TAG, "onImageAvailable: tracker init");
+                            Tracker.init(bitmap, roi);
+                        } else { // det failed
+
+                        }
+
                     }
 
+                    Log.d(TAG, "onImageAvailable: has_face " + has_face +
+                            " det_success " + det_success + " det_count " + det_count
+                            + " track_count " + track_count);
+
+
+                    mDetect_isbusy = false;
                 }).start();
             }
 
@@ -320,10 +349,11 @@ public class CameraNcnnFragment extends Fragment
 
     };
 
-    public void mtcnn_detect(byte[] yuv, int width, int height){
+    public void mtcnn_detect(byte[] yuv, int width, int height) {
         float[] result = ncnnprocess_imgyuv(yuv, width, height);
-
+        det_count += 1;
         if (result != null) {
+            det_success = true;
 
             mDetect_result = Arrays.copyOfRange(result, 128, result.length);
             Log.d(TAG, "detect result " + mDetect_result.length + " "
@@ -362,6 +392,8 @@ public class CameraNcnnFragment extends Fragment
                 facesimilar = compareface(targetfaceimg_feature, capturefaceimg_feature);
             }
             notifyimgupdate();
+        } else {
+            det_success = false;
         }
     }
 
@@ -387,7 +419,10 @@ public class CameraNcnnFragment extends Fragment
         Log.d(TAG, "onImageAvailable: ssd detect start");
         float[] result = FaceDetect.detect(bitmap);
         Log.d(TAG, "onImageAvailable: ssd detect end");
+
+        det_count += 1;
         if (result != null) {
+            det_success = true;
 //                            [from, to)
             mDetect_result = Arrays.copyOfRange(result, 1, 15);
             Log.d(TAG, "detect result " + mDetect_result.length + " "
@@ -436,14 +471,53 @@ public class CameraNcnnFragment extends Fragment
             capturefaceimg = Tracker.gray(Bitmap.createBitmap(bitmap, x, y, xe - x, ye - y));
 
             notifyimgupdate();
+        } else {
+            det_success = false;
         }
-//                        try {
-//                            Thread.sleep(100);
-//                        } catch (InterruptedException e) {
-//                            e.printStackTrace();
-//                        }
+    }
 
-        mDetect_isbusy = false;
+    private void cutBoxAndShowInCapture(Bitmap bitmap, float[] firstface) {
+        int x, y, xe, ye;
+        double expand = 0.05f;
+
+        firstface[0] -= expand;
+        firstface[1] -= expand;
+        firstface[2] += expand;
+        firstface[3] += expand;
+
+        for (int i = 0; i < 4; i++) {
+            if (firstface[i] > 1)
+                firstface[i] = 1;
+            if (firstface[i] < 0)
+                firstface[i] = 0;
+        }
+
+        x = (int) (firstface[0] * bitmap.getWidth());
+        y = (int) (firstface[1] * bitmap.getHeight());
+        xe = (int) (firstface[2] * bitmap.getWidth());
+        ye = (int) (firstface[3] * bitmap.getHeight());
+
+        if(firstface.length > 4) {
+            Log.d(TAG, "onImageAvailable: cut to cpature " + firstface[5] + " " + firstface[5] * bitmap.getWidth());
+
+            Canvas canvas = new Canvas(bitmap);
+
+            Paint paint = new Paint();
+            paint.setColor(Color.RED);
+            paint.setStyle(Paint.Style.STROKE);//不填充
+            paint.setStrokeWidth(20);  //线的宽度
+            paint.setStyle(Paint.Style.FILL);
+
+            for (int j = 4; j <= 13; j += 2) {
+                firstface[j] = Util.clamp(firstface[j] * bitmap.getWidth(), 0, bitmap.getWidth());
+                firstface[j + 1] = Util.clamp(firstface[j + 1] * bitmap.getHeight(), 0, bitmap.getHeight());
+
+                canvas.drawPoint(firstface[j], firstface[j + 1], paint);
+            }
+//                            bitmap = Tracker.gray(bitmap);
+        }
+        capturefaceimg = Tracker.gray(Bitmap.createBitmap(bitmap, x, y, xe - x, ye - y));
+        notifyimgupdate();
     }
 
     private CaptureRequest.Builder mPreviewYUVRequestBuilder;

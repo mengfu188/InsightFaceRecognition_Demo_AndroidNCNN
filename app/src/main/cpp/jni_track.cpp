@@ -19,7 +19,7 @@
 
 #define LOGD(...) ((void)__android_log_print(ANDROID_LOG_DEBUG, TAG, __VA_ARGS__))
 
-cv::Ptr<cv::Tracker> tracker ;
+cv::Ptr<cv::Tracker> tracker = cv::TrackerKCF::create();
 
 static int max_side=320;
 static int bbox_size = 4;
@@ -55,6 +55,7 @@ Java_com_chenty_testncnn_Tracker_init(JNIEnv *env, jclass clazz, jintArray buf, 
 
 
     cv::Mat imgData(h, w, CV_8UC4, (unsigned char *) cbuf);
+    cv::cvtColor(imgData, imgData, cv::COLOR_BGRA2BGR);
 
 
 //    for(int i = 0; i < bbox_size; i++){
@@ -107,6 +108,7 @@ Java_com_chenty_testncnn_Tracker_update(JNIEnv *env, jclass clazz, jintArray buf
     target_w = width * scale;
 
     cv::Mat imgData(h, w, CV_8UC4, (unsigned char *) cbuf);
+    cv::cvtColor(imgData, imgData, cv::COLOR_BGRA2BGR);
 
 
 //    for(int i = 0; i < bbox_size; i++){
