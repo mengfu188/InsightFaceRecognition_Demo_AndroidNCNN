@@ -35,6 +35,8 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.TextureView;
 
+import java.util.Arrays;
+
 /**
  * A {@link TextureView} that can be adjusted to a specified aspect ratio.
  */
@@ -198,7 +200,7 @@ public class AutoFitSurfaceView extends SurfaceView implements SurfaceHolder.Cal
                 matrix.setScale(scaleWidth, scaleHeight);
                 mCanvas.drawBitmap(mBitmap, matrix, paint);
                 if(result !=null) {
-                    Log.d(TAG, "Draw: face info");
+                    Log.d(TAG, "Draw: face info length is " + result.length + " content " + Arrays.toString(result));
                     DrawDetectFace(result, (int) mWidth, (int) mHeight, rolatedeg);
                 }
                 Log.d(TAG, "Draw: end");

@@ -92,7 +92,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-public class CameraNcnnFragment extends Fragment
+ public class CameraNcnnFragment extends Fragment
         implements View.OnClickListener, ActivityCompat.OnRequestPermissionsResultCallback {
 
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
@@ -138,6 +138,10 @@ public class CameraNcnnFragment extends Fragment
                     Log.d(TAG, "onViewAttachedToWindow: init arcface start");
                     intiArcface(MainActivity.manager);
                     Log.d(TAG, "onViewAttachedToWindow: init arcface end");
+
+                    Log.d(TAG, "onViewAttachedToWindow: init tracker start");
+                    Tracker.init(MainActivity.manager);
+                    Log.d(TAG, "onViewAttachedToWindow: init tracker end");
 
 
                     Log.i(TAG, "onViewAttachedToWindow " + MAX_PREVIEW_WIDTH + "X" + MAX_PREVIEW_HEIGHT);
@@ -259,7 +263,7 @@ public class CameraNcnnFragment extends Fragment
     private boolean det_success = false;
     private int det_count = 0;
     private int track_count = 0;
-    private float[] roi;
+    private float[] roi = {0};
 
     private final ImageReader.OnImageAvailableListener mOnImageAvailableListener
             = new ImageReader.OnImageAvailableListener() {
@@ -342,11 +346,12 @@ public class CameraNcnnFragment extends Fragment
 
                     if (det_success) {
                         has_face = true;
-                        roi = new float[]{mDetect_result[0], mDetect_result[1], mDetect_result[2], mDetect_result[3]};
+//                        roi = new float[]{mDetect_result[0], mDetect_result[1], mDetect_result[2], mDetect_result[3]};
+                        roi = Arrays.copyOfRange(mDetect_result, 0, 14);
                         Log.d(TAG, "onImageAvailable: tracker init");
                         Tracker.initTrack(bitmap, roi);
                     } else { // det failed
-
+//                        cutBoxAndShowInCapture(bitmap, new float[] {0, 0, 10, 10});
                     }
 
                 }
@@ -521,15 +526,15 @@ public class CameraNcnnFragment extends Fragment
             paint.setStrokeWidth(20);  //线的宽度
             paint.setStyle(Paint.Style.FILL);
 
-            for (int j = 4; j <= 13; j += 2) {
-                firstface[j] = Util.clamp(firstface[j] * bitmap.getWidth(), 0, bitmap.getWidth());
-                firstface[j + 1] = Util.clamp(firstface[j + 1] * bitmap.getHeight(), 0, bitmap.getHeight());
-
-                canvas.drawPoint(firstface[j], firstface[j + 1], paint);
-            }
+//            for (int j = 4; j <= 13; j += 2) {
+//                firstface[j] = Util.clamp(firstface[j] * bitmap.getWidth(), 0, bitmap.getWidth());
+//                firstface[j + 1] = Util.clamp(firstface[j + 1] * bitmap.getHeight(), 0, bitmap.getHeight());
+//
+//                canvas.drawPoint(firstface[j], firstface[j + 1], paint);
+//            }
 //                            bitmap = Tracker.gray(bitmap);
         }
-        capturefaceimg = Bitmap.createBitmap(bitmap, x, y, xe - x, ye - y);
+//        capturefaceimg = Bitmap.createBitmap(bitmap, x, y, xe - x, ye - y);
         notifyimgupdate();
 //        captureface.setImageBitmap(capturefaceimg);
     }

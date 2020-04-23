@@ -1,5 +1,6 @@
 package com.chenty.testncnn;
 
+import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 
 public class Tracker {
@@ -40,6 +41,7 @@ public class Tracker {
     public static native boolean initTrack(int[] buf, int w, int h, float[] bbox);
     public static native float[] updateTrack(int[] buf, int w, int h, float[] bbox);
     public static native void reset();
+    public static native void init(AssetManager manager);
 
 
 }
