@@ -100,13 +100,13 @@ public class CameraNcnnFragment extends Fragment
     private static final String FRAGMENT_DIALOG = "dialog";
     private static final String DETECT_TYPE = "SSD";
 
-    private static RejectedExecutionHandler discardPolicy = new ThreadPoolExecutor.DiscardPolicy();
+    private static RejectedExecutionHandler abortPolicy = new ThreadPoolExecutor.AbortPolicy();
 
     private static ExecutorService pool = new ThreadPoolExecutor(1, 1,
             0L, TimeUnit.MILLISECONDS,
             new LinkedBlockingQueue<Runnable>(),
             Executors.defaultThreadFactory(),
-            discardPolicy);
+            abortPolicy);
 
     static {
         ORIENTATIONS.append(Surface.ROTATION_0, 90);
@@ -247,10 +247,10 @@ public class CameraNcnnFragment extends Fragment
             // 处理从子线程发送过来的消息
             captureface.setImageBitmap(capturefaceimg);
             resulttextview.setText(getString(R.string.equal) + ": " + ((float) Math.round(facesimilar * 10000)) / 100 + "%");
-            track_info1.setText("has_face "+ has_face);
-            track_info2.setText("det_succ "+ det_success);
-            track_info3.setText("det "+ det_count);
-            track_info4.setText("track "+ track_count);
+            track_info1.setText("has_face " + has_face);
+            track_info2.setText("det_succ " + det_success);
+            track_info3.setText("det " + det_count);
+            track_info4.setText("track " + track_count);
 
         }
     };
@@ -318,60 +318,46 @@ public class CameraNcnnFragment extends Fragment
 //            }
 
             //split process function to prevent img reflash stop
-
-//            );
-
-                new Thread(() -> {
-                    if (!mDetect_isbusy) {
-                        mDetect_isbusy = true;
-
-//                pool.execute(() -> {
-                        if (has_face) {
-                            roi = Tracker.update(bitmap, roi);
-                            mDetect_result = roi;
-                            if (roi[0] == 0 && roi[1] == 0 && roi[2] == 0 && roi[3] == 0) {
-                                // track failed
-                                has_face = false;
-                                Tracker.reset();
-                            } else {
-                                track_count += 1;
+            pool.execute(() -> {
+                if (has_face) {
+                    roi = Tracker.update(bitmap, roi);
+                    mDetect_result = roi;
+                    if (roi[0] == 0 && roi[1] == 0 && roi[2] == 0 && roi[3] == 0) {
+                        // track failed
+                        has_face = false;
+                        Tracker.reset();
+                    } else {
+                        track_count += 1;
 //                                roi = roi;
-                                cutBoxAndShowInCapture(bitmap, roi);
-                            }
-
-                        } else {
-
-                            if (DETECT_TYPE == "MTCNN") {
-                                mtcnn_detect(yuv, width, height);
-                            } else if (DETECT_TYPE == "SSD") {
-                                ssd_detect(bitmap);
-                            }
-
-                            if (det_success) {
-                                has_face = true;
-                                roi = new float[]{mDetect_result[0], mDetect_result[1], mDetect_result[2], mDetect_result[3]};
-                                Log.d(TAG, "onImageAvailable: tracker init");
-                                Tracker.init(bitmap, roi);
-                            } else { // det failed
-
-                            }
-
-                        }
-
-                        Log.d(TAG, "onImageAvailable: has_face " + has_face +
-                                " det_success " + det_success + " det_count " + det_count
-                                + " track_count " + track_count);
-
-
-
-
-                        mDetect_isbusy = false;
+                        cutBoxAndShowInCapture(bitmap, roi);
                     }
-//
-                }).start();
 
+                } else {
 
+                    if (DETECT_TYPE == "MTCNN") {
+                        mtcnn_detect(yuv, width, height);
+                    } else if (DETECT_TYPE == "SSD") {
+                        ssd_detect(bitmap);
+                    }
+
+                    if (det_success) {
+                        has_face = true;
+                        roi = new float[]{mDetect_result[0], mDetect_result[1], mDetect_result[2], mDetect_result[3]};
+                        Log.d(TAG, "onImageAvailable: tracker init");
+                        Tracker.init(bitmap, roi);
+                    } else { // det failed
+
+                    }
+
+                }
+
+                Log.d(TAG, "onImageAvailable: has_face " + has_face +
+                        " det_success " + det_success + " det_count " + det_count
+                        + " track_count " + track_count);
+
+            });
             im.close();
+
         }
 
     };
@@ -524,7 +510,7 @@ public class CameraNcnnFragment extends Fragment
         xe = (int) (firstface[2] * bitmap.getWidth());
         ye = (int) (firstface[3] * bitmap.getHeight());
 
-        if(firstface.length > 4) {
+        if (firstface.length > 4) {
             Log.d(TAG, "onImageAvailable: cut to cpature " + firstface[5] + " " + firstface[5] * bitmap.getWidth());
 
             Canvas canvas = new Canvas(bitmap);
@@ -647,10 +633,10 @@ public class CameraNcnnFragment extends Fragment
     private ImageView captureface;
     private ImageView targetface;
     private TextView resulttextview;
-    private TextView track_info1 ;
-    private TextView track_info2 ;
-    private TextView track_info3 ;
-    private TextView track_info4 ;
+    private TextView track_info1;
+    private TextView track_info2;
+    private TextView track_info3;
+    private TextView track_info4;
 
     @Override
     public void onViewCreated(final View view, Bundle savedInstanceState) {
@@ -658,10 +644,10 @@ public class CameraNcnnFragment extends Fragment
         view.findViewById(R.id.info).setOnClickListener(this);
         view.findViewById(R.id.camswitch).setOnClickListener(this);
         view.findViewById(R.id.capture).setOnClickListener(this);
-        captureface =  view.findViewById(R.id.captureface);
-        targetface =  view.findViewById(R.id.targetface);
-        mSurfaceView =  view.findViewById(R.id.texture);
-        resulttextview =  view.findViewById(R.id.resulttext);
+        captureface = view.findViewById(R.id.captureface);
+        targetface = view.findViewById(R.id.targetface);
+        mSurfaceView = view.findViewById(R.id.texture);
+        resulttextview = view.findViewById(R.id.resulttext);
         track_info1 = view.findViewById(R.id.track_info1);
         track_info2 = view.findViewById(R.id.track_info2);
         track_info3 = view.findViewById(R.id.track_info3);
