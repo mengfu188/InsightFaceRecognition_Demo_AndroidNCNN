@@ -320,7 +320,7 @@ public class CameraNcnnFragment extends Fragment
             //split process function to prevent img reflash stop
             pool.execute(() -> {
                 if (has_face) {
-                    roi = Tracker.update(bitmap, roi);
+                    roi = Tracker.updateTrack(bitmap, roi);
                     mDetect_result = roi;
                     if (roi[0] == 0 && roi[1] == 0 && roi[2] == 0 && roi[3] == 0) {
                         // track failed
@@ -344,7 +344,7 @@ public class CameraNcnnFragment extends Fragment
                         has_face = true;
                         roi = new float[]{mDetect_result[0], mDetect_result[1], mDetect_result[2], mDetect_result[3]};
                         Log.d(TAG, "onImageAvailable: tracker init");
-                        Tracker.init(bitmap, roi);
+                        Tracker.initTrack(bitmap, roi);
                     } else { // det failed
 
                     }

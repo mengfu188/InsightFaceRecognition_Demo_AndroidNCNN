@@ -23,11 +23,12 @@ cv::Ptr<cv::Tracker> tracker = cv::TrackerKCF::create();
 
 static int max_side=150;
 static int bbox_size = 4;
+static ncnn::Net onet;
 static Timer timer;
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_chenty_testncnn_Tracker_init(JNIEnv *env, jclass clazz, jintArray buf, jint w, jint h, jfloatArray bbox) {
+Java_com_chenty_testncnn_Tracker_initTrack___3III_3F(JNIEnv *env, jclass clazz, jintArray buf, jint w, jint h, jfloatArray bbox) {
     /*
      * bbox: x1, y1, x2, y2. norm value of buf.
      *
@@ -84,7 +85,7 @@ Java_com_chenty_testncnn_Tracker_init(JNIEnv *env, jclass clazz, jintArray buf, 
     return false;
 }extern "C"
 JNIEXPORT jfloatArray JNICALL
-Java_com_chenty_testncnn_Tracker_update(JNIEnv *env, jclass clazz, jintArray buf, jint w, jint h, jfloatArray bbox) {
+Java_com_chenty_testncnn_Tracker_updateTrack___3III_3F(JNIEnv *env, jclass clazz, jintArray buf, jint w, jint h, jfloatArray bbox) {
     /*
      * bbox: x1, y1, x2, y2. norm value of buf.
      *
