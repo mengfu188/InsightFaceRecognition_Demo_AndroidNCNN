@@ -74,11 +74,13 @@ find_library( # Sets the name of the path variable.
 target_link_libraries( # Specifies the target library.
         native-lib
 #        jnigraphics
-                -ljnigraphics
+#                -ljnigraphics
         ${CMAKE_SOURCE_DIR}/ncnn-android-lib/${ANDROID_ABI}/libncnn.a
         android
         z
         lib_opencv
+        vulkan
+        jnigraphics
         # Links the target library to the log library
         # included in the NDK.
         ${log-lib})

@@ -21,7 +21,7 @@
 #define NCNN_BENCHMARK 0
 #define NCNN_PIXEL 1
 #define NCNN_PIXEL_ROTATE 1
-#define NCNN_VULKAN 0
+#define NCNN_VULKAN 1
 #define NCNN_REQUANT 0
 #define NCNN_AVX2 0
 
