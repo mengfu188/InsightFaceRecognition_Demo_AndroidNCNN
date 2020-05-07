@@ -92,13 +92,15 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
- public class CameraNcnnFragment extends Fragment
+public class CameraNcnnFragment extends Fragment
         implements View.OnClickListener, ActivityCompat.OnRequestPermissionsResultCallback {
 
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
     private static final int REQUEST_CAMERA_PERMISSION = 1;
     private static final String FRAGMENT_DIALOG = "dialog";
     private static final String DETECT_TYPE = "SSD";
+    private String realCameraId = "1";
+    private static boolean run = false;
 
     private static RejectedExecutionHandler abortPolicy = new ThreadPoolExecutor.AbortPolicy();
 
@@ -142,6 +144,10 @@ import java.util.concurrent.TimeUnit;
                     Log.d(TAG, "onViewAttachedToWindow: init tracker start");
                     Tracker.init(MainActivity.manager);
                     Log.d(TAG, "onViewAttachedToWindow: init tracker end");
+
+                    Log.d(TAG, "onViewAttachedToWindow: init ssd v2 start");
+                    FaceDetectV2.init(MainActivity.manager, 2, true);
+                    Log.d(TAG, "onViewAttachedToWindow: init ssd v2 end");
 
 
                     Log.i(TAG, "onViewAttachedToWindow " + MAX_PREVIEW_WIDTH + "X" + MAX_PREVIEW_HEIGHT);
@@ -322,45 +328,54 @@ import java.util.concurrent.TimeUnit;
 //            }
 
             //split process function to prevent img reflash stop
-            pool.execute(() -> {
-                if (has_face) {
-                    roi = Tracker.updateTrack(bitmap, roi);
-                    mDetect_result = roi;
-                    if (roi[0] == 0 && roi[1] == 0 && roi[2] == 0 && roi[3] == 0) {
-                        // track failed
-                        has_face = false;
-                        Tracker.reset();
-                    } else {
-                        track_count += 1;
-//                                roi = roi;
-                        cutBoxAndShowInCapture(bitmap, roi);
-                    }
+            if (run == false) {
 
-                } else {
+                pool.execute(() -> {
+                    run = true;
+//                float[] ret = FaceDetectV2.detectByBitmap(bitmap);
+//                roi = Arrays.copyOfRange(ret, 1, 5);
+                    // TODO fix bug
+                    ssd_v2_detect(bitmap);
 
-                    if (DETECT_TYPE == "MTCNN") {
-                        mtcnn_detect(yuv, width, height);
-                    } else if (DETECT_TYPE == "SSD") {
-                        ssd_detect(bitmap);
-                    }
+//                    if (has_face) {
+//                        roi = Tracker.updateTrack(bitmap, roi);
+//                        mDetect_result = roi;
+//                        if (roi[0] == 0 && roi[1] == 0 && roi[2] == 0 && roi[3] == 0) {
+//                            // track failed
+//                            has_face = false;
+//                            Tracker.reset();
+//                        } else {
+//                            track_count += 1;
+////                                roi = roi;
+//                            cutBoxAndShowInCapture(bitmap, roi);
+//                        }
+//
+//                    } else {
+//
+//                        if (DETECT_TYPE == "MTCNN") {
+//                            mtcnn_detect(yuv, width, height);
+//                        } else if (DETECT_TYPE == "SSD") {
+//                            ssd_detect(bitmap);
+//                        }
+//
+//                        if (det_success) {
+//                            has_face = true;
+////                        roi = new float[]{mDetect_result[0], mDetect_result[1], mDetect_result[2], mDetect_result[3]};
+//                            roi = Arrays.copyOfRange(mDetect_result, 0, 14);
+//                            Log.d(TAG, "onImageAvailable: tracker init");
+//                            Tracker.initTrack(bitmap, roi);
+//                        } else { // det failed
+////                        cutBoxAndShowInCapture(bitmap, new float[] {0, 0, 10, 10});
+//                        }
+//
+//                    }
 
-                    if (det_success) {
-                        has_face = true;
-//                        roi = new float[]{mDetect_result[0], mDetect_result[1], mDetect_result[2], mDetect_result[3]};
-                        roi = Arrays.copyOfRange(mDetect_result, 0, 14);
-                        Log.d(TAG, "onImageAvailable: tracker init");
-                        Tracker.initTrack(bitmap, roi);
-                    } else { // det failed
-//                        cutBoxAndShowInCapture(bitmap, new float[] {0, 0, 10, 10});
-                    }
-
-                }
-
-                Log.d(TAG, "onImageAvailable: has_face " + has_face +
-                        " det_success " + det_success + " det_count " + det_count
-                        + " track_count " + track_count);
-
-            });
+                    Log.d(TAG, "onImageAvailable: has_face " + has_face +
+                            " det_success " + det_success + " det_count " + det_count
+                            + " track_count " + track_count);
+                    run = false;
+                });
+            }
             im.close();
 
         }
@@ -485,6 +500,84 @@ import java.util.concurrent.TimeUnit;
 
                 canvas.drawPoint(firstface[j], firstface[j + 1], paint);
             }
+//                            bitmap = Tracker.gray(bitmap);
+            capturefaceimg = Bitmap.createBitmap(bitmap, x, y, xe - x, ye - y);
+
+            notifyimgupdate();
+        } else {
+            det_success = false;
+        }
+    }
+
+    public void ssd_v2_detect(Bitmap bitmap) {
+        int width = bitmap.getWidth(), height = bitmap.getHeight();
+//                            result
+//                            arr[0] = bbox_.s;
+//                            arr[1] = bbox_.x1;
+//                            arr[2] = bbox_.y1;
+//                            arr[3] = bbox_.x2;
+//                            arr[4] = bbox_.y2;
+//
+//                            arr[5] = bbox_.point[0]._x;
+//                            arr[6] = bbox_.point[0]._y;
+//                            arr[7] = bbox_.point[1]._x;
+//                            arr[8] = bbox_.point[1]._y;
+//                            arr[9] = bbox_.point[2]._x;
+//                            arr[10] = bbox_.point[2]._y;
+//                            arr[11] = bbox_.point[3]._x;
+//                            arr[12] = bbox_.point[3]._y;
+//                            arr[13] = bbox_.point[4]._x;
+//                            arr[14] = bbox_.point[4]._y;
+        Log.d(TAG, "onImageAvailable: ssd v2 detect start");
+        float[] result = FaceDetectV2.detect(bitmap);
+        Log.d(TAG, "onImageAvailable: ssd v2 detect end");
+
+        det_count += 1;
+        if (result != null) {
+            det_success = true;
+//                            [from, to)
+            mDetect_result = Arrays.copyOfRange(result, 1, 5);
+            Log.d(TAG, "detect result " + mDetect_result.length + " "
+                    + mDetect_result[0] + " " + mDetect_result[1] + " " + mDetect_result[2] + " " + mDetect_result[3] + " "
+            );
+
+            int x, y, xe, ye;
+            double expand = 0.05f;
+            float[] firstface = Arrays.copyOfRange(result, 1, 5);
+
+            firstface[0] -= expand;
+            firstface[1] -= expand;
+            firstface[2] += expand;
+            firstface[3] += expand;
+
+            for (int i = 0; i < 4; i++) {
+                if (firstface[i] > 1)
+                    firstface[i] = 1;
+                if (firstface[i] < 0)
+                    firstface[i] = 0;
+            }
+
+            x = (int) (firstface[0] * bitmap.getWidth());
+            y = (int) (firstface[1] * bitmap.getHeight());
+            xe = (int) (firstface[2] * bitmap.getWidth());
+            ye = (int) (firstface[3] * bitmap.getHeight());
+
+//             Log.d(TAG, "onImageAvailable: cut to cpature " + firstface[5] + " " + firstface[5] * bitmap.getWidth());
+
+            Canvas canvas = new Canvas(bitmap);
+
+            Paint paint = new Paint();
+            paint.setColor(Color.RED);
+            paint.setStyle(Paint.Style.STROKE);//不填充
+            paint.setStrokeWidth(20);  //线的宽度
+            paint.setStyle(Paint.Style.FILL);
+
+//             for (int j = 4; j <= 13; j += 2) {
+//                 firstface[j] = Util.clamp(firstface[j] * width, 0, width);
+//                 firstface[j + 1] = Util.clamp(firstface[j + 1] * height, 0, height);
+//
+//                 canvas.drawPoint(firstface[j], firstface[j + 1], paint);
+//             }
 //                            bitmap = Tracker.gray(bitmap);
             capturefaceimg = Bitmap.createBitmap(bitmap, x, y, xe - x, ye - y);
 
@@ -727,6 +820,7 @@ import java.util.concurrent.TimeUnit;
         CameraManager manager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
         try {
             for (String cameraId : manager.getCameraIdList()) {
+                Log.d(TAG, "setUpCameraOutputs: CameraId has " + cameraId);
                 CameraCharacteristics characteristics
                         = manager.getCameraCharacteristics(cameraId);
 
@@ -833,8 +927,7 @@ import java.util.concurrent.TimeUnit;
                 Boolean available = characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
                 mFlashSupported = available == null ? false : available;
 
-                mCameraId = cameraId;
-                mCameraId = "1";
+                mCameraId = realCameraId;
                 return;
             }
         } catch (CameraAccessException e) {

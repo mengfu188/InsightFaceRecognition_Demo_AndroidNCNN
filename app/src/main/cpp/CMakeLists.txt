@@ -37,6 +37,10 @@ set(NCNN_SRC_LISTS
         jni_track.cpp
         detect/FaceDetector.cpp
         detect/FaceDetector.h
+        detect_v2/UltraFace.hpp
+        detect_v2/UltraFace.cpp
+        util.cpp
+        face_detect_v2.cpp
         )
 
 include_directories(${OpenCV_DIR}/jni/include)
